@@ -1,0 +1,207 @@
+/* Video Container */
+.video-container {
+    width: 80%;
+    max-width: 24rem; /* Keeps aspect ratio manageable */
+    aspect-ratio: 4 / 3;
+    margin: 0 auto;
+    overflow: hidden;
+    border: 0.2rem solid #f8e71c; /* Bright yellow border */
+    background: radial-gradient(circle, #000 70%, #333 100%); /* Subtle CRT effect */
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.7);
+}
+
+.video-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    filter: contrast(1.2) brightness(1.1); /* Slight CRT brightness/contrast */
+    border-radius: 0;
+}
+
+/* Logs Section */
+#training-logs {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border: 0.2rem solid #50e3c2; /* Bright green retro border */
+    border-radius: 0;
+    background-color: #111; /* Darker for contrast */
+    overflow: auto;
+    max-height: 20rem;
+    font-family: 'Courier New', Courier, monospace; /* Retro terminal font */
+    color: #50e3c2;
+}
+
+/* Training Status */
+#training-status {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+#training-status h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* Forms and Inputs */
+input, select {
+    font-family: 'Press Start 2P', cursive, sans-serif;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border: 0.2rem solid #50e3c2; /* Green retro border */
+    background: #111;
+    color: #f8e71c; /* Yellow text */
+    outline: none;
+    border-radius: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+input:focus, select:focus {
+    border-color: #f8e71c; /* Bright yellow focus */
+}
+
+/* Sections */
+h1, h2 {
+    color: #f8e71c;
+    text-transform: uppercase;
+}
+
+h1 {
+    font-size: 2rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+}
+
+/* Wrappers and Callbacks Grid */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 1rem;
+}
+
+.grid-item-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.grid-item-wrapper input {
+    margin: 0;
+    transform: scale(1.2); /* Slightly larger checkboxes */
+}
+
+.grid-item-wrapper span {
+    color: #f8e71c; /* Retro yellow */
+}
+
+.grid-container.hyperparameters-grid {
+    grid-template-columns: repeat(4, 1fr); /* Four columns for hyperparameters */
+    gap: 2%;
+}
+
+.grid-item label {
+    display: block;
+    font-size: 0.9rem;
+    color: #f8e71c;
+}
+
+.config-input {
+    margin-top: 0.5rem;
+    width: 100%;
+    font-size: 0.8rem;
+    border: 0.1rem solid #50e3c2;
+    background: #111;
+    color: #fff;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+}
+
+/* Miscellaneous */
+.section-title {
+    text-align: center;
+    border-bottom: 0.2rem solid #50e3c2;
+    margin-bottom: 2rem;
+    padding-bottom: 0.5rem;
+}
+
+/* Tooltip Icon */
+.tooltip-icon {
+    margin-left: 0.5rem;
+    color: #50e3c2;
+    cursor: pointer;
+    font-size: 0.9rem;
+    vertical-align: top;
+}
+
+.tooltip-icon:hover {
+    color: #f8e71c;
+}
+
+/* Modal Styling */
+.tooltip-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+.tooltip-content {
+    background: #1a1a1a;
+    color: #fff;
+    margin: 10% auto;
+    padding: 2rem;
+    width: 50%;
+    border: 0.2rem solid #50e3c2;
+    border-radius: 0.5rem;
+    text-align: left;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.8);
+}
+
+.tooltip-content .close {
+    color: #fff;
+    font-size: 1.5rem;
+    float: right;
+    cursor: pointer;
+}
+
+.tooltip-content h2 {
+    color: #f8e71c;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.tooltip-content h3 {
+    color: #50e3c2;
+    margin: 1rem 0 0.5rem;
+    font-size: 1.2rem;
+}
+
+.example-text {
+    background: #333;
+    color: #f8e71c;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+}
+
+.pro-tip-text {
+    background: #222;
+    color: #50e3c2;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+}
+

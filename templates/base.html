@@ -1,0 +1,47 @@
+<!-- path: templates/base.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="32x32" type="image/icon">
+</head>
+<body>
+    <header style="display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background-color: #333; color: white;">
+        <div>
+            <h1>Super Mario RL Dashboard</h1>
+            <nav>
+                <ul style="display: flex; list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-right: 15px;">
+                        <a href="{{ url_for('dashboard.index') }}" style="color: white; text-decoration: none;">
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('tensorboard_routes.tensorboard') }}" style="color: white; text-decoration: none;">
+                            TensorBoard
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div id="training-status" style="text-align: right;">
+            <h2 style="margin: 0;">Status: <span id="status" style="color: #007BFF;">Unknown</span></h2>
+            <button id="start-training" class="action-button">
+                <i class="fas fa-play"></i> Start
+            </button>
+            <button id="stop-training" class="action-button" disabled>
+                <i class="fas fa-stop"></i> Stop
+            </button>
+        </div>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+{
+    "n_steps": {
+        "title": "Number of Steps",
+        "description": "Number of steps to run per environment per update. Must be greater than 1 to enable advantage normalization.",
+        "example": "Example: Set n_steps to 2048 for standard PPO training.",
+        "proTip": "Higher values increase stability but require more memory. Recommended to keep between 1024 and 8192."
+    },
+    "batch_size": {
+        "title": "Batch Size",
+        "description": "Size of the mini-batches used for training. Smaller sizes allow faster updates but increase variance.",
+        "example": "Example: Use powers of 2 (e.g., 64, 128) for optimal GPU utilization.",
+        "proTip": "Larger batch sizes reduce variance but require more memory. Adjust based on available resources."
+    },
+    "n_epochs": {
+        "title": "Number of Epochs",
+        "description": "Number of passes through the data during optimization. Higher values improve convergence but increase computational cost.",
+        "example": "Example: Set this between 3 and 10.",
+        "proTip": "If loss fluctuates, increase the epochs for smoother convergence."
+    },
+    "gamma": {
+        "title": "Discount Factor",
+        "description": "Controls how much the model values long-term rewards. Range is 0 to 1.",
+        "example": "Example: Use 0.99 for long-term tasks.",
+        "proTip": "Keep this close to 1 for tasks that require planning or learning from distant rewards."
+    },
+    "gae_lambda": {
+        "title": "GAE Lambda",
+        "description": "Bias-variance trade-off parameter for the Generalized Advantage Estimation.",
+        "example": "Example: Set to 0.95 for balanced bias and variance.",
+        "proTip": "Lower values reduce bias, higher values reduce variance."
+    },
+    "clip_range_start": {
+        "title": "Initial Clip Range",
+        "description": "Initial clipping range for PPO updates. Limits the size of policy updates to stabilize training.",
+        "example": "Example: Start with 0.2 for most tasks.",
+        "proTip": "Use a smaller value if training becomes unstable."
+    },
+    "clip_range_end": {
+        "title": "Final Clip Range",
+        "description": "Final clipping range for PPO updates. Gradually decays during training.",
+        "example": "Example: End with values around 0.05 for fine-tuned updates.",
+        "proTip": "Decay clipping range to prevent overfitting during training."
+    },
+    "vf_coef": {
+        "title": "Value Function Coefficient",
+        "description": "Weight for the value function loss. Balances policy and value updates.",
+        "example": "Example: Default is 0.5.",
+        "proTip": "Increase if the value function is lagging behind policy updates."
+    },
+    "ent_coef": {
+        "title": "Entropy Coefficient",
+        "description": "Coefficient for entropy regularization to encourage exploration.",
+        "example": "Example: Set to a small value like 0.01.",
+        "proTip": "Reduce if entropy loss is too high; increase to encourage exploration."
+    },
+    "max_grad_norm": {
+        "title": "Max Gradient Norm",
+        "description": "Maximum value for gradient clipping to prevent exploding gradients.",
+        "example": "Example: Default is 0.5.",
+        "proTip": "Set to a smaller value if training becomes unstable."
+    },
+    "normalize_advantage": {
+        "title": "Normalize Advantage",
+        "description": "Whether to normalize advantages for training.",
+        "example": "Example: Set to True to improve stability.",
+        "proTip": "Leave this as True unless using a custom setup."
+    },
+    "device": {
+        "title": "Device",
+        "description": "Device to run the code on ('cpu', 'cuda', or 'auto').",
+        "example": "Example: Use 'auto' to default to GPU when available.",
+        "proTip": "Set to 'cuda' for faster training if a GPU is available."
+    },
+    "num_envs": {
+        "title": "Number of Environments",
+        "description": "Number of parallel environments to use for training.",
+        "example": "Example: Use 8 or 16 for faster training.",
+        "proTip": "Increase for faster training but higher memory usage."
+    },
+    "total_timesteps": {
+        "title": "Total Timesteps",
+        "description": "Total number of timesteps to train the model.",
+        "example": "Example: Set to 1e6 (1,000,000) for medium-sized tasks.",
+        "proTip": "Set this to a large value for better performance."
+    },
+    "autosave_freq": {
+        "title": "Autosave Frequency",
+        "description": "Frequency to save the model during training.",
+        "example": "Example: Save every 100,000 timesteps.",
+        "proTip": "Set this to a small value to avoid losing progress."
+    },
+    "random_stages": {
+        "title": "Random Stages",
+        "description": "Train on random stages from the environment.",
+        "example": "Example: Use True for diversity in training.",
+        "proTip": "Enable this for better generalization across levels."
+    },
+    "stages": {
+        "title": "Stages",
+        "description": "List of stages to train on. Works only if random_stages is True.",
+        "example": "Example: ['1-1', '2-1', '3-1']",
+        "proTip": "Specify key stages for focused training."
+    },
+    "wrappers": {
+        "title": "Wrappers",
+        "description": "Wrappers modify the environment by adding custom functionality like observation filtering, reward shaping, or additional logging.",
+        "example": "Example: Use a wrapper to normalize observations:\n```python\nfrom stable_baselines3.common.vec_env import VecNormalize\nenv = VecNormalize(env)\n```",
+        "proTip": "Use wrappers for preprocessing tasks like observation normalization or action clipping to simplify training."
+    },
+    "callbacks": {
+        "title": "Callbacks",
+        "description": "Callbacks allow you to hook into the training process for events like logging, saving models, or early stopping.",
+        "example": "Example: Save the model periodically using CheckpointCallback:\n```python\nfrom stable_baselines3.common.callbacks import CheckpointCallback\ncallback = CheckpointCallback(save_freq=1000, save_path='./models/')\n```",
+        "proTip": "Combine multiple callbacks using `CallbackList` for complex workflows, like saving, logging, and custom metrics."
+    },
+    "learning_rate_start": {
+        "title": "Learning Rate (Start)",
+        "description": "The initial learning rate for the optimizer. It determines how fast the model adjusts weights at the beginning of training.",
+        "example": "Example: Start with 0.0003 for stable convergence.",
+        "proTip": "Start with a moderate value like 0.0003 to ensure stable training. If training diverges, reduce this value."
+    },
+    "learning_rate_end": {
+        "title": "Learning Rate (End)",
+        "description": "The final learning rate for the optimizer. It is used in a decaying schedule towards the end of training.",
+        "example": "Example: End with a smaller value like 0.00005 to fine-tune the model.",
+        "proTip": "Lower final values help with fine-tuning during the last stages of training."
+    },
+    "clip_range_vf_start": {
+        "title": "Value Function Clip Range (Start)",
+        "description": "Initial clipping range for the value function updates. It helps stabilize training by limiting the size of updates to the value function.",
+        "example": "Example: Start with 0.2 for most tasks.",
+        "proTip": "Adjust this if value function loss fluctuates significantly. Leave it at None if clipping is not required."
+    },
+    "clip_range_vf_end": {
+        "title": "Value Function Clip Range (End)",
+        "description": "Final clipping range for value function updates, applied towards the end of training.",
+        "example": "Example: End with 0.05 to refine value updates.",
+        "proTip": "Lower values reduce the impact of updates but ensure stability during fine-tuning."
+    },
+    "pi_net": {
+        "title": "Policy Network Architecture",
+        "description": "Defines the architecture of the policy network. The network layers are specified as comma-separated integers.",
+        "example": "Example: Use '256,256' for two layers with 256 neurons each.",
+        "proTip": "Adjust based on the complexity of the environment. Larger networks handle more complex policies but require more memory and computation."
+    },
+    "vf_net": {
+        "title": "Value Function Network Architecture",
+        "description": "Defines the architecture of the value function network. The network layers are specified as comma-separated integers.",
+        "example": "Example: Use '256,256' for two layers with 256 neurons each.",
+        "proTip": "Match the architecture of the policy network for balanced training. Increase size for tasks with complex value functions."
+    },
+    "use_sde": {
+        "title": "Use State-Dependent Exploration (SDE)",
+        "description": "Enables generalized state-dependent exploration for continuous action spaces.",
+        "example": "Example: Set to True for environments with high sensitivity to noise.",
+        "proTip": "Use SDE to improve exploration in continuous environments. Leave as False for discrete action spaces."
+    },
+    "sde_sample_freq": {
+        "title": "SDE Sampling Frequency",
+        "description": "Specifies how often to resample noise when using state-dependent exploration.",
+        "example": "Example: Set to -1 to sample only at the start of rollouts.",
+        "proTip": "Leave at -1 for most cases. Increase frequency if exploration needs to adapt more frequently."
+    }
+}
