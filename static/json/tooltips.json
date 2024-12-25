@@ -7,9 +7,9 @@
     },
     "batch_size": {
         "title": "Batch Size",
-        "description": "Size of the mini-batches used for training. Smaller sizes allow faster updates but increase variance.",
-        "example": "Example: Use powers of 2 (e.g., 64, 128) for optimal GPU utilization.",
-        "proTip": "Larger batch sizes reduce variance but require more memory. Adjust based on available resources."
+        "description": "Size of the mini-batches used for training. The dropdown menu dynamically calculates valid batch sizes based on the total rollout size (n_steps × num_envs). Only values that evenly divide the total rollout are displayed.",
+        "example": "Example: Use powers of 2 (e.g., 64, 128) when possible for optimal GPU utilization.",
+        "proTip": "Larger batch sizes reduce variance but require more memory. Use the dropdown menu to select the largest valid size for faster training while balancing memory usage."
     },
     "n_epochs": {
         "title": "Number of Epochs",
@@ -31,15 +31,15 @@
     },
     "clip_range_start": {
         "title": "Initial Clip Range",
-        "description": "Initial clipping range for PPO updates. Limits the size of policy updates to stabilize training.",
-        "example": "Example: Start with 0.2 for most tasks.",
-        "proTip": "Use a smaller value if training becomes unstable."
+        "description": "The starting value for the clipping range in PPO updates. This limits how much the policy can change during each update, stabilizing training.",
+        "example": "Example: Start with 0.2 for most environments.",
+        "proTip": "Use 0.2 as a baseline and adjust downward if training is unstable. Valid range: 0 to 1."
     },
     "clip_range_end": {
         "title": "Final Clip Range",
-        "description": "Final clipping range for PPO updates. Gradually decays during training.",
-        "example": "Example: End with values around 0.05 for fine-tuned updates.",
-        "proTip": "Decay clipping range to prevent overfitting during training."
+        "description": "The final value for the clipping range in PPO updates. This value is used at the end of training and helps fine-tune policy updates.",
+        "example": "Example: End with 0.05 for refined updates.",
+        "proTip": "Smaller values, such as 0.05, prevent overfitting during the final stages of training. Valid range: 0 to 1. Ensure this value is not higher than the initial clip range."
     },
     "vf_coef": {
         "title": "Value Function Coefficient",
@@ -115,27 +115,27 @@
     },
     "learning_rate_start": {
         "title": "Learning Rate (Start)",
-        "description": "The initial learning rate for the optimizer. It determines how fast the model adjusts weights at the beginning of training.",
-        "example": "Example: Start with 0.0003 for stable convergence.",
-        "proTip": "Start with a moderate value like 0.0003 to ensure stable training. If training diverges, reduce this value."
+        "description": "The initial learning rate for the optimizer, determining how fast the model learns at the start of training.",
+        "example": "Example: Start with 0.0003 for stable learning.",
+        "proTip": "Use a moderate value like 0.0003 to avoid divergence. Valid range: 0 to 1."
     },
     "learning_rate_end": {
         "title": "Learning Rate (End)",
-        "description": "The final learning rate for the optimizer. It is used in a decaying schedule towards the end of training.",
-        "example": "Example: End with a smaller value like 0.00005 to fine-tune the model.",
-        "proTip": "Lower final values help with fine-tuning during the last stages of training."
+        "description": "The final learning rate for the optimizer, used towards the end of training for fine-tuning.",
+        "example": "Example: End with 0.00005 for precise adjustments.",
+        "proTip": "Smaller values help with fine-tuning and ensure stability in later stages. Valid range: 0 to 1. Ensure this value is not higher than the starting learning rate."
     },
     "clip_range_vf_start": {
         "title": "Value Function Clip Range (Start)",
-        "description": "Initial clipping range for the value function updates. It helps stabilize training by limiting the size of updates to the value function.",
-        "example": "Example: Start with 0.2 for most tasks.",
-        "proTip": "Adjust this if value function loss fluctuates significantly. Leave it at None if clipping is not required."
+        "description": "Initial clipping range for value function updates. Limits how much the value function can change during updates to maintain stability.",
+        "example": "Example: Start with 0.2 for typical tasks.",
+        "proTip": "If value function loss fluctuates too much, adjust this value. Leave as 'None' if clipping is unnecessary. Valid range: 0 to 1."
     },
     "clip_range_vf_end": {
         "title": "Value Function Clip Range (End)",
-        "description": "Final clipping range for value function updates, applied towards the end of training.",
-        "example": "Example: End with 0.05 to refine value updates.",
-        "proTip": "Lower values reduce the impact of updates but ensure stability during fine-tuning."
+        "description": "Final clipping range for value function updates, applied during the last stages of training.",
+        "example": "Example: End with 0.05 to refine value function updates.",
+        "proTip": "Lower final values stabilize the value function during fine-tuning. Valid range: 0 to 1. Ensure this value is not higher than the initial value function clip range."
     },
     "pi_net": {
         "title": "Policy Network Architecture",
@@ -149,16 +149,34 @@
         "example": "Example: Use '256,256' for two layers with 256 neurons each.",
         "proTip": "Match the architecture of the policy network for balanced training. Increase size for tasks with complex value functions."
     },
-    "use_sde": {
-        "title": "Use State-Dependent Exploration (SDE)",
-        "description": "Enables generalized state-dependent exploration for continuous action spaces.",
-        "example": "Example: Set to True for environments with high sensitivity to noise.",
-        "proTip": "Use SDE to improve exploration in continuous environments. Leave as False for discrete action spaces."
+    "training_config": {
+        "title": "Training Configuration",
+        "description": "Defines high-level training parameters, such as the number of environments, stages, and total timesteps for training. Used to control the overall behavior of the training loop.",
+        "example": "Example: { 'num_envs': 4, 'total_timesteps': 1e7, 'stages': ['level1', 'level2'] }",
+        "proTip": "Adjust 'num_envs' based on available CPU cores to maximize training throughput."
     },
-    "sde_sample_freq": {
-        "title": "SDE Sampling Frequency",
-        "description": "Specifies how often to resample noise when using state-dependent exploration.",
-        "example": "Example: Set to -1 to sample only at the start of rollouts.",
-        "proTip": "Leave at -1 for most cases. Increase frequency if exploration needs to adapt more frequently."
+    "hyperparameters": {
+        "title": "Hyperparameters",
+        "description": "Specifies low-level training parameters that control optimization, value updates, and agent behavior. Includes values such as learning rate, batch size, and discount factors.",
+        "example": "Example: { 'learning_rate': 3e-4, 'batch_size': 64, 'gamma': 0.99, 'clip_range': 0.2 }",
+        "proTip": "Tuning hyperparameters can greatly impact training performance. Start with default values and adjust based on training stability and reward trends."
+    },
+    "rollout_buffer_class": {
+        "title": "Rollout Buffer Class",
+        "description": "Specifies the buffer class used to store and sample rollout data during training. Defaults to the appropriate class for the selected algorithm if left None.",
+        "example": "Example: Use 'DictRolloutBuffer' for environments with dictionary observation spaces.",
+        "proTip": "Customize this value only if you need advanced buffer behavior or specific sampling strategies."
+    },
+    "rollout_buffer_kwargs": {
+        "title": "Rollout Buffer Keyword Arguments",
+        "description": "Additional configuration options for the rollout buffer. Accepts a dictionary of arguments passed during buffer initialization.",
+        "example": "Example: { 'gamma': 0.99, 'gae_lambda': 0.95 } for Generalized Advantage Estimation.",
+        "proTip": "Use this to fine-tune the behavior of the buffer, such as adjusting gamma or enabling time-limited discounts."
+    },
+    "target_kl": {
+        "title": "Target KL Divergence",
+        "description": "Limits the KL divergence between updates to prevent excessively large policy changes. Useful for maintaining stable training.",
+        "example": "Example: Set 'target_kl': 0.01 to limit KL divergence during updates.",
+        "proTip": "Set this value to None if you want no KL divergence constraints. Use small values like 0.01 to enforce tighter stability."
     }
 }
