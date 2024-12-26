@@ -3,17 +3,19 @@
 from flask import Blueprint, jsonify, request
 from pathlib import Path
 import json
-import logging
 
-def create_config_blueprint(training_manager):
+def create_config_blueprint(training_manager, app_logger):
     """
-    Create the config blueprint and integrate the training_manager.
+    Create the config blueprint and integrate the training_manager and logger.
     
     :param training_manager: Global TrainingManager instance to interact with.
+    :param app_logger: Global logger instance to be shared across blueprints.
     :return: Config blueprint.
     """
+    # Create a new logger for this blueprint
+    logger = app_logger.__class__("config_routes")  # Create a scoped logger
+
     config_blueprint = Blueprint("config_routes", __name__)
-    logger = logging.getLogger("config_routes")
 
     # Directory to store configurations
     CONFIG_DIR = Path("./configs")
@@ -43,6 +45,7 @@ def create_config_blueprint(training_manager):
         try:
             with config_path.open("w") as f:
                 json.dump(config_data, f, indent=4)
+            logger.info(f"Configuration '{config_name}' saved successfully.")
             return jsonify({"status": "success", "message": f"Configuration '{config_name}' saved."})
         except Exception as e:
             logger.error(f"Error saving configuration '{config_name}': {e}")
@@ -50,7 +53,6 @@ def create_config_blueprint(training_manager):
 
     @config_blueprint.route("/load_config/<name>", methods=["GET"])
     def load_config(name):
-        """Load a configuration."""
         config_path = CONFIG_DIR / f"{name}.json"
         if not config_path.exists():
             return jsonify({"status": "error", "message": f"Configuration '{name}' not found."}), 404
@@ -58,13 +60,9 @@ def create_config_blueprint(training_manager):
         try:
             with config_path.open() as f:
                 config_data = json.load(f)
-            
-            # Optionally update the training manager's configuration
-            training_manager.update_config(config_data)
-
             return jsonify({"status": "success", "config": config_data})
         except Exception as e:
-            logger.error(f"Error loading configuration '{name}': {e}")
+            logger.error(f"Error loading configuration '{name}': {str(e)}")
             return jsonify({"status": "error", "message": f"Failed to load configuration '{name}'."}), 500
 
     @config_blueprint.route("/delete_config/<name>", methods=["DELETE"])
@@ -79,6 +77,7 @@ def create_config_blueprint(training_manager):
 
         try:
             config_path.unlink()
+            logger.info(f"Configuration '{name}' deleted successfully.")
             return jsonify({"status": "success", "message": f"Configuration '{name}' deleted."})
         except Exception as e:
             logger.error(f"Error deleting configuration '{name}': {e}")
@@ -89,6 +88,7 @@ def create_config_blueprint(training_manager):
         """List all configurations."""
         try:
             configs = [p.stem for p in CONFIG_DIR.glob("*.json")]
+            logger.info(f"Listed configurations: {configs}")
             return jsonify({"status": "success", "configs": configs})
         except Exception as e:
             logger.error(f"Error listing configurations: {e}")

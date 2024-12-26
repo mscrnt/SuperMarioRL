@@ -1,7 +1,7 @@
 # path: ./log_manager.py
 
-from icecream import ic, install
-from multiprocessing import Queue, current_process
+from icecream import ic
+from multiprocessing import Queue
 import colorama
 from colorama import Fore, Style
 import inspect
@@ -9,6 +9,8 @@ import os
 import traceback
 from concurrent_log_handler import ConcurrentRotatingFileHandler
 import logging
+from datetime import datetime
+import re
 
 colorama.init(autoreset=True)
 
@@ -17,7 +19,21 @@ log_queue = Queue()
 
 # Assign unique colors for loggers
 COLOR_MAP = {}
-COLORS = [Fore.GREEN, Fore.YELLOW, Fore.CYAN, Fore.MAGENTA, Fore.BLUE]
+COLORS = [
+    Fore.GREEN,
+    Fore.YELLOW,
+    Fore.CYAN,
+    Fore.MAGENTA,
+    Fore.BLUE,
+    Fore.RED,
+    Fore.WHITE,
+    Fore.LIGHTGREEN_EX,
+    Fore.LIGHTYELLOW_EX,
+    Fore.LIGHTCYAN_EX,
+    Fore.LIGHTMAGENTA_EX,
+    Fore.LIGHTBLUE_EX,
+    Fore.LIGHTWHITE_EX,
+]
 
 
 def assign_color(name):
@@ -29,52 +45,42 @@ def assign_color(name):
     return COLOR_MAP[name]
 
 
+def strip_ansi_escape_sequences(message):
+    """
+    Remove ANSI escape sequences (color codes) from a message.
+    """
+    ansi_escape = re.compile(r'(?:\x1B[@-_]|[\x9B\x1B][\[()#;?]*[ -/]*[@-~])')
+    return ansi_escape.sub("", message)
+
+
 def send_to_ui_log(message):
     """
-    Send logs to the shared queue for the UI.
+    Send clean logs to the shared queue for the UI.
     """
-    log_queue.put(message)
+    clean_message = strip_ansi_escape_sequences(message)
+    log_queue.put(clean_message)
 
 
-# Configure IceCream to support dual output (terminal + UI)
-def dual_output(message):
+def configure_ic_logger(name, color):
     """
-    Send logs to both the terminal and UI.
+    Configure IceCream logger with unique colors and contextual information.
     """
-    print(message)  # Terminal output
-    send_to_ui_log(message)  # UI queue
+    def custom_prefix():
+        now = datetime.now().strftime("%H:%M:%S")
+        return f"{color}[{name}] {now} | "
 
-
-ic.configureOutput(
-    prefix="",
-    includeContext=True,
-    outputFunction=dual_output  # Dual output configuration
-)
-
-
-class LevelFilter(logging.Filter):
-    """
-    Filters logs for specific levels.
-    """
-    def __init__(self, levels):
-        super().__init__()
-        self.levels = levels
-
-    def filter(self, record):
-        return record.levelno in self.levels
+    ic.configureOutput(prefix=custom_prefix, includeContext=True)
+    return ic
 
 
 class LogManager:
     """
-    Manages logging for simplified and contextual debugging.
+    Manages logging for debugging with IceCream and traditional logging.
     """
     _instances = {}
     log_file = "./logs/app.log"  # Default log file location
 
     def __new__(cls, name=None):
-        """
-        Singleton to ensure one instance per logger name.
-        """
         if name is None:
             frame = inspect.currentframe().f_back
             name = os.path.basename(frame.f_code.co_filename).replace(".py", "")
@@ -84,9 +90,6 @@ class LogManager:
         return cls._instances[name]
 
     def __init__(self, name=None):
-        """
-        Initialize the logger and assign a unique color.
-        """
         if hasattr(self, "initialized"):
             return
         self.initialized = True
@@ -97,81 +100,96 @@ class LogManager:
         self.name = name
         self.color = assign_color(name)
 
-        # Set up a logger
+        # Set up logger
         self.logger = logging.getLogger(self.name)
         self.logger.setLevel(logging.DEBUG)  # Capture all log levels
         self._setup_handlers()
 
+        # Configure IceCream for this logger
+        self.ic = configure_ic_logger(self.name, self.color)
+        self.logger.debug(f"Logger initialized for {self.name}")
+
     def _setup_handlers(self):
         """
-        Set up handlers for terminal, UI, and file logging.
+        Set up handlers for file, terminal, and UI logs.
         """
         self.logger.handlers.clear()
 
         # Ensure log file directory exists
         os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
 
-        # Terminal handler
-        terminal_handler = logging.StreamHandler()
-        terminal_handler.setLevel(logging.INFO)
-        terminal_handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
-        self.logger.addHandler(terminal_handler)
-
-        # Concurrent rotating file handler
+        # File Handler
         file_handler = ConcurrentRotatingFileHandler(
             self.log_file, maxBytes=10 * 1024 * 1024, backupCount=5
         )
         file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s - %(message)s"))
+        file_handler.setFormatter(logging.Formatter("[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s"))
         self.logger.addHandler(file_handler)
 
-        # UI handler
+        # UI Handler
         ui_handler = logging.StreamHandler()
         ui_handler.setLevel(logging.INFO)
-        ui_handler.addFilter(LevelFilter([logging.INFO, logging.ERROR]))
-        ui_handler.setFormatter(logging.Formatter("%(name)s - %(message)s"))
-        ui_handler.emit = lambda record: send_to_ui_log(ui_handler.format(record))
+        ui_handler.setFormatter(logging.Formatter("%(message)s"))
+        ui_handler.emit = lambda record: self._emit_to_ui(record)
         self.logger.addHandler(ui_handler)
 
-    def _format_message(self, level, *args, **kwargs):
+        # Terminal Handler
+        terminal_handler = logging.StreamHandler()
+        terminal_handler.setLevel(logging.INFO)
+        terminal_handler.setFormatter(logging.Formatter("%(message)s"))  # Add color dynamically
+        terminal_handler.emit = lambda record: self._emit_to_terminal(record)
+        self.logger.addHandler(terminal_handler)
+
+    def _emit_to_ui(self, record):
         """
-        Format the log message for readability.
+        Process logs for UI display.
+        """
+        # Extract clean message
+        message = strip_ansi_escape_sequences(record.getMessage())
+        # Strip logger name, timestamps, and levels
+        clean_message = re.sub(r"\[.*?\] ", "", message, count=1)
+        send_to_ui_log(clean_message)
+
+    def _emit_to_terminal(self, record):
+        """
+        Process logs for terminal display.
+        """
+        # Add color dynamically for terminal
+        level_color = self._get_level_color(record.levelname)
+        formatted_message = f"{self.color}[{self.name}] {record.getMessage()}"  # No level in the message
+        print(f"{level_color}{formatted_message}{Style.RESET_ALL}")
+
+    def _get_level_color(self, levelname):
+        """
+        Map log levels to specific colors.
+        """
+        color_map = {
+            "DEBUG": Fore.CYAN,
+            "INFO": Fore.GREEN,
+            "WARNING": Fore.YELLOW,
+            "ERROR": Fore.RED,
+        }
+        return color_map.get(levelname, Fore.WHITE)
+
+    def debug(self, *args, **kwargs):
+        self.logger.debug(self._format_message(*args, **kwargs))
+
+    def info(self, *args, **kwargs):
+        self.logger.info(self._format_message(*args, **kwargs))
+
+    def warning(self, *args, **kwargs):
+        self.logger.warning(self._format_message(*args, **kwargs))
+
+    def error(self, *args, exception=None, **kwargs):
+        if exception:
+            traceback_details = "".join(traceback.format_exception(None, exception, exception.__traceback__))
+            kwargs["traceback"] = traceback_details
+        self.logger.error(self._format_message(*args, **kwargs))
+
+    def _format_message(self, *args, **kwargs):
+        """
+        Format the log message body only, without log level or metadata.
         """
         args_message = " ".join(map(str, args))
         kwargs_message = ", ".join(f"{key}={value}" for key, value in kwargs.items())
         return f"{args_message} {kwargs_message}".strip()
-
-    def log(self, level, *args, **kwargs):
-        """
-        Log a message with the specified level, arguments, and keyword arguments.
-        """
-        formatted_message = self._format_message(level, *args, **kwargs)
-        log_method = getattr(self.logger, level.lower(), self.logger.info)
-        log_method(formatted_message)
-
-    def debug(self, *args, **kwargs):
-        """
-        Debug-level logging.
-        """
-        self.logger.debug(self._format_message("DEBUG", *args, **kwargs))
-
-    def info(self, *args, **kwargs):
-        """
-        Info-level logging.
-        """
-        self.logger.info(self._format_message("INFO", *args, **kwargs))
-
-    def warning(self, *args, **kwargs):
-        """
-        Warning-level logging.
-        """
-        self.logger.warning(self._format_message("WARNING", *args, **kwargs))
-
-    def error(self, *args, exception=None, **kwargs):
-        """
-        Error-level logging with exception details if provided.
-        """
-        if exception:
-            traceback_details = "".join(traceback.format_exception(None, exception, exception.__traceback__))
-            kwargs["traceback"] = traceback_details
-        self.logger.error(self._format_message("ERROR", *args, **kwargs))

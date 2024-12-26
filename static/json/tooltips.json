@@ -1,182 +1,188 @@
 {
     "n_steps": {
-        "title": "Number of Steps",
-        "description": "Number of steps to run per environment per update. Must be greater than 1 to enable advantage normalization.",
-        "example": "Example: Set n_steps to 2048 for standard PPO training.",
-        "proTip": "Higher values increase stability but require more memory. Recommended to keep between 1024 and 8192."
+        "title": "How Far Mario Runs Before Learning",
+        "description": "This sets how many steps Mario takes in the Mushroom Kingdom before pausing to learn from his adventures. Bigger numbers mean Mario explores more before training.",
+        "example": "Example: Set this to 2048 if you want Mario to explore two big levels before learning.",
+        "proTip": "If Mario seems confused, try increasing the steps so he has more experiences to learn from. Keep it between 1024 and 8192 for best results."
     },
     "batch_size": {
-        "title": "Batch Size",
-        "description": "Size of the mini-batches used for training. The dropdown menu dynamically calculates valid batch sizes based on the total rollout size (n_steps × num_envs). Only values that evenly divide the total rollout are displayed.",
-        "example": "Example: Use powers of 2 (e.g., 64, 128) when possible for optimal GPU utilization.",
-        "proTip": "Larger batch sizes reduce variance but require more memory. Use the dropdown menu to select the largest valid size for faster training while balancing memory usage."
+        "title": "Size of Mario's Learning Groups",
+        "description": "When Mario trains, he looks at small groups of his adventures (called batches). This setting controls how big those groups are.",
+        "example": "Example: Use a batch size of 64 or 128 so Mario learns quickly without overloading his memory.",
+        "proTip": "Bigger group sizes make training smoother but take more memory. Start with a medium-sized group like 64 and see how Mario improves!"
     },
     "n_epochs": {
-        "title": "Number of Epochs",
-        "description": "Number of passes through the data during optimization. Higher values improve convergence but increase computational cost.",
-        "example": "Example: Set this between 3 and 10.",
-        "proTip": "If loss fluctuates, increase the epochs for smoother convergence."
+        "title": "How Many Times Mario Studies Each Adventure",
+        "description": "This tells Mario how many times to go over the same adventures during training. More passes help Mario learn better but take longer.",
+        "example": "Example: Set this to 5 if you want Mario to carefully study his adventures 5 times.",
+        "proTip": "If Mario isn’t getting better, try increasing this to make him study his adventures more thoroughly."
     },
     "gamma": {
-        "title": "Discount Factor",
-        "description": "Controls how much the model values long-term rewards. Range is 0 to 1.",
-        "example": "Example: Use 0.99 for long-term tasks.",
-        "proTip": "Keep this close to 1 for tasks that require planning or learning from distant rewards."
+        "title": "How Much Mario Thinks About the Future",
+        "description": "This controls how much Mario cares about future rewards (like saving Princess Peach) compared to immediate rewards (like grabbing a coin).",
+        "example": "Example: Use 0.99 if you want Mario to focus on long-term goals like finishing the level.",
+        "proTip": "Keep this close to 1 if you want Mario to plan ahead. Use smaller values if Mario should focus on quick wins, like collecting nearby coins."
     },
     "gae_lambda": {
-        "title": "GAE Lambda",
-        "description": "Bias-variance trade-off parameter for the Generalized Advantage Estimation.",
-        "example": "Example: Set to 0.95 for balanced bias and variance.",
-        "proTip": "Lower values reduce bias, higher values reduce variance."
+        "title": "How Mario Balances His Moves",
+        "description": "This helps Mario balance between learning quickly from recent moves and considering all his past adventures. It fine-tunes how he learns from each step.",
+        "example": "Example: Set this to 0.95 so Mario learns evenly from both recent jumps and long-term strategies.",
+        "proTip": "Lower values make Mario focus more on immediate rewards, while higher values help him learn from long-term strategies. Stick with 0.95 for balanced learning."
     },
     "clip_range_start": {
-        "title": "Initial Clip Range",
-        "description": "The starting value for the clipping range in PPO updates. This limits how much the policy can change during each update, stabilizing training.",
-        "example": "Example: Start with 0.2 for most environments.",
-        "proTip": "Use 0.2 as a baseline and adjust downward if training is unstable. Valid range: 0 to 1."
+        "title": "How Much Mario Can Experiment at First",
+        "description": "This controls how much Mario is allowed to change his strategy in the early part of training. Big changes can be risky, so this helps keep him on track.",
+        "example": "Example: Start with 0.2 so Mario can safely experiment without losing focus.",
+        "proTip": "Use 0.2 as a safe starting point. If Mario’s training becomes unstable, try lowering it slightly."
     },
     "clip_range_end": {
-        "title": "Final Clip Range",
-        "description": "The final value for the clipping range in PPO updates. This value is used at the end of training and helps fine-tune policy updates.",
-        "example": "Example: End with 0.05 for refined updates.",
-        "proTip": "Smaller values, such as 0.05, prevent overfitting during the final stages of training. Valid range: 0 to 1. Ensure this value is not higher than the initial clip range."
+        "title": "How Much Mario Can Experiment Later",
+        "description": "As Mario gets better, this limits how much he can change his strategy during training. It ensures he fine-tunes his skills without overreacting.",
+        "example": "Example: End with 0.05 so Mario refines his strategy carefully by the end of training.",
+        "proTip": "Smaller values like 0.05 help Mario stay consistent during the final stages of training. Keep this smaller than the initial clip range."
     },
     "vf_coef": {
-        "title": "Value Function Coefficient",
-        "description": "Weight for the value function loss. Balances policy and value updates.",
-        "example": "Example: Default is 0.5.",
-        "proTip": "Increase if the value function is lagging behind policy updates."
+        "title": "How Much Mario Thinks About the Big Picture",
+        "description": "This controls how much Mario focuses on understanding the whole level (value function) compared to just improving his immediate moves.",
+        "example": "Example: Set this to 0.5 so Mario balances between planning ahead and reacting to what’s in front of him.",
+        "proTip": "If Mario struggles with planning, increase this value. If he’s too focused on the big picture, decrease it to make him react faster."
     },
     "ent_coef": {
-        "title": "Entropy Coefficient",
-        "description": "Coefficient for entropy regularization to encourage exploration.",
-        "example": "Example: Set to a small value like 0.01.",
-        "proTip": "Reduce if entropy loss is too high; increase to encourage exploration."
+        "title": "How Curious Mario Is",
+        "description": "This controls how much Mario explores new paths instead of sticking to the ones he already knows. A little curiosity helps Mario find better strategies!",
+        "example": "Example: Set this to 0.01 to give Mario just enough curiosity to try new things.",
+        "proTip": "If Mario gets stuck doing the same thing, increase this value. If he explores too much, lower it slightly."
     },
     "max_grad_norm": {
-        "title": "Max Gradient Norm",
-        "description": "Maximum value for gradient clipping to prevent exploding gradients.",
-        "example": "Example: Default is 0.5.",
-        "proTip": "Set to a smaller value if training becomes unstable."
+        "title": "How Mario Stays Balanced While Training",
+        "description": "This sets a limit to how big Mario's learning steps can be. It keeps him from getting overwhelmed by sudden big changes.",
+        "example": "Example: Use 0.5 to help Mario take steady, controlled learning steps.",
+        "proTip": "If Mario’s training gets unstable, try lowering this value to keep his steps smaller and steadier."
     },
     "normalize_advantage": {
-        "title": "Normalize Advantage",
-        "description": "Whether to normalize advantages for training.",
-        "example": "Example: Set to True to improve stability.",
-        "proTip": "Leave this as True unless using a custom setup."
+        "title": "Does Mario Compare His Moves?",
+        "description": "If enabled, Mario checks how good each move was compared to his average moves. This helps him focus on what really works.",
+        "example": "Example: Set this to True so Mario learns smarter by comparing his actions.",
+        "proTip": "Keep this as True unless you’re doing something advanced. It helps Mario improve faster!"
     },
     "device": {
-        "title": "Device",
-        "description": "Device to run the code on ('cpu', 'cuda', or 'auto').",
-        "example": "Example: Use 'auto' to default to GPU when available.",
-        "proTip": "Set to 'cuda' for faster training if a GPU is available."
+        "title": "Where Mario Does His Thinking",
+        "description": "This decides whether Mario uses a CPU or GPU to think and learn. A GPU helps him train much faster if available.",
+        "example": "Example: Use 'auto' to let Mario automatically pick the fastest option.",
+        "proTip": "If you have a powerful GPU, set this to 'cuda' to help Mario learn in record time!"
     },
     "num_envs": {
-        "title": "Number of Environments",
-        "description": "Number of parallel environments to use for training.",
-        "example": "Example: Use 8 or 16 for faster training.",
-        "proTip": "Increase for faster training but higher memory usage."
+        "title": "How Many Mushroom Kingdoms Mario Runs Through at Once",
+        "description": "This sets how many Marios are running in parallel worlds while training. More worlds mean faster learning!",
+        "example": "Example: Use 8 or 16 worlds to speed up Mario's training.",
+        "proTip": "If your computer has enough memory, increasing this will make Mario train faster. Start with 8 and go higher if things run smoothly."
     },
     "total_timesteps": {
-        "title": "Total Timesteps",
-        "description": "Total number of timesteps to train the model.",
-        "example": "Example: Set to 1e6 (1,000,000) for medium-sized tasks.",
-        "proTip": "Set this to a large value for better performance."
+        "title": "How Many Steps Mario Trains total",
+        "description": "This decides how long Mario keeps training. More steps mean Mario becomes a better hero but takes longer to finish. This is the total number of steps Mario takes in all his adventures combined.",
+        "example": "Example: Set this to 1,000,000 steps (1e6) for Mario to master medium-sized challenges.",
+        "proTip": "For tough levels or long adventures, use bigger values like 2,000,000 to give Mario plenty of time to learn."
     },
     "autosave_freq": {
-        "title": "Autosave Frequency",
-        "description": "Frequency to save the model during training.",
-        "example": "Example: Save every 100,000 timesteps.",
-        "proTip": "Set this to a small value to avoid losing progress."
+        "title": "How Often Mario Saves His Progress",
+        "description": "This sets how often Mario pauses to save his progress during training. Saving ensures you don’t lose Mario’s hard work!",
+        "example": "Example: Save every 100,000 steps to keep Mario’s progress safe.",
+        "proTip": "Save more frequently if you're experimenting or worried about crashes. It’s always better to have backups!"
     },
     "random_stages": {
-        "title": "Random Stages",
-        "description": "Train on random stages from the environment.",
-        "example": "Example: Use True for diversity in training.",
-        "proTip": "Enable this for better generalization across levels."
+        "title": "Does Mario Train on Random Levels?",
+        "description": "If enabled, Mario trains on a variety of levels instead of just one. This helps him become a better all-around hero.",
+        "example": "Example: Set this to True so Mario learns to beat levels like Bowser’s castle and underwater adventures.",
+        "proTip": "Keep this on for better training across different levels. Turn it off only if you want Mario to focus on a single level."
     },
     "stages": {
-        "title": "Stages",
-        "description": "List of stages to train on. Works only if random_stages is True.",
-        "example": "Example: ['1-1', '2-1', '3-1']",
-        "proTip": "Specify key stages for focused training."
+        "title": "Which Levels Mario Trains On",
+        "description": "List the specific levels Mario should train on. Works used if random stages are enabled, so Mario can jump between levels.",
+        "example": "Example: ['1-1', '2-1', '3-1'] to focus on these iconic stages.",
+        "proTip": "Pick key levels for Mario to practice, like challenging ones where he needs to master tricky jumps or dodge Bowser’s fireballs!"
     },
     "wrappers": {
-        "title": "Wrappers",
-        "description": "Wrappers modify the environment by adding custom functionality like observation filtering, reward shaping, or additional logging.",
-        "example": "Example: Use a wrapper to normalize observations:\n```python\nfrom stable_baselines3.common.vec_env import VecNormalize\nenv = VecNormalize(env)\n```",
-        "proTip": "Use wrappers for preprocessing tasks like observation normalization or action clipping to simplify training."
+        "title": "Special Training Gear for Mario",
+        "description": "Wrappers add tools to Mario's training, like giving him goggles to see better (observation filtering) or extra coins to learn faster (reward shaping). These require programming knowledge to implement.",
+        "example": "See documentation for examples of how to set up custom wrappers.",
+        "proTip": "Use wrappers to simplify Mario’s training, like normalizing how he sees the level or limiting how fast he moves. This is an advanced feature, so you’ll need to write code to set it up."
     },
     "callbacks": {
-        "title": "Callbacks",
-        "description": "Callbacks allow you to hook into the training process for events like logging, saving models, or early stopping.",
-        "example": "Example: Save the model periodically using CheckpointCallback:\n```python\nfrom stable_baselines3.common.callbacks import CheckpointCallback\ncallback = CheckpointCallback(save_freq=1000, save_path='./models/')\n```",
-        "proTip": "Combine multiple callbacks using `CallbackList` for complex workflows, like saving, logging, and custom metrics."
+        "title": "Mario’s Helpers During Training",
+        "description": "Callbacks let you add helpers that check on Mario’s training, save his progress, or tell him when to stop if he’s doing really well. Setting up callbacks requires programming knowledge.",
+        "example": "See documentation for examples of how to set up custom callbacks.",
+        "proTip": "Callbacks are powerful for adding features like saving progress, logging stats, or stopping training early. However, they are an advanced feature and require you to write some code."
     },
     "learning_rate_start": {
-        "title": "Learning Rate (Start)",
-        "description": "The initial learning rate for the optimizer, determining how fast the model learns at the start of training.",
-        "example": "Example: Start with 0.0003 for stable learning.",
-        "proTip": "Use a moderate value like 0.0003 to avoid divergence. Valid range: 0 to 1."
+        "title": "How Fast Mario Learns at the Start",
+        "description": "This controls how quickly Mario learns new moves at the beginning of training. Starting too fast can make him forget things, while too slow means he’ll take forever to improve.",
+        "example": "Example: Start with 0.0003 to give Mario a steady learning pace.",
+        "proTip": "Use a small but steady value like 0.0003 to help Mario learn smoothly. Avoid setting this too high, or Mario might get overwhelmed!"
     },
     "learning_rate_end": {
-        "title": "Learning Rate (End)",
-        "description": "The final learning rate for the optimizer, used towards the end of training for fine-tuning.",
-        "example": "Example: End with 0.00005 for precise adjustments.",
-        "proTip": "Smaller values help with fine-tuning and ensure stability in later stages. Valid range: 0 to 1. Ensure this value is not higher than the starting learning rate."
+        "title": "How Slow Mario Learns at the End",
+        "description": "This controls how carefully Mario adjusts his strategy as he nears the end of training. A slower pace helps Mario fine-tune his skills without making big mistakes.",
+        "example": "Example: Set this to 0.00005 so Mario focuses on precise adjustments.",
+        "proTip": "Use a smaller value like 0.00005 for steady fine-tuning at the end. Make sure this is smaller than the starting learning rate!"
     },
     "clip_range_vf_start": {
-        "title": "Value Function Clip Range (Start)",
-        "description": "Initial clipping range for value function updates. Limits how much the value function can change during updates to maintain stability.",
-        "example": "Example: Start with 0.2 for typical tasks.",
-        "proTip": "If value function loss fluctuates too much, adjust this value. Leave as 'None' if clipping is unnecessary. Valid range: 0 to 1."
+        "title": "How Much Mario Adjusts His Plans Early On",
+        "description": "This limits how much Mario changes his understanding of the level (value function) at the start of training. It keeps his plans from changing too wildly.",
+        "example": "Example: Start with 0.2 to allow Mario to adjust but not overreact.",
+        "proTip": "If Mario’s plans (value function) change too much and make training unstable, lower this value. Use 'None' if you don’t want to limit it."
+    },
+    "seed": {
+    "title": "Mario’s Lucky Starting Number",
+    "description": "This sets Mario's lucky number to control how his adventures begin. It makes sure the levels, enemies, and rewards behave the same way every time he trains, making it easier to repeat and compare his progress.",
+    "example": "Example: Set 'seed': 42 to give Mario a consistent starting point for his training adventures.",
+    "proTip": "Use a specific seed if you want Mario’s training to be repeatable. Leave it as random for a fresh adventure every time!"
     },
     "clip_range_vf_end": {
-        "title": "Value Function Clip Range (End)",
-        "description": "Final clipping range for value function updates, applied during the last stages of training.",
-        "example": "Example: End with 0.05 to refine value function updates.",
-        "proTip": "Lower final values stabilize the value function during fine-tuning. Valid range: 0 to 1. Ensure this value is not higher than the initial value function clip range."
+        "title": "How Much Mario Fine-Tunes His Plans Later",
+        "description": "As Mario gets better, this limits how much he tweaks his understanding of the level (value function). It ensures stable, small adjustments at the end of training.",
+        "example": "Example: Set this to 0.05 to make Mario’s final adjustments precise.",
+        "proTip": "Smaller values like 0.05 help Mario stay consistent as he wraps up training. Keep this smaller than the starting value."
     },
     "pi_net": {
-        "title": "Policy Network Architecture",
-        "description": "Defines the architecture of the policy network. The network layers are specified as comma-separated integers.",
-        "example": "Example: Use '256,256' for two layers with 256 neurons each.",
-        "proTip": "Adjust based on the complexity of the environment. Larger networks handle more complex policies but require more memory and computation."
+        "title": "Mario’s Strategy Brain",
+        "description": "This sets up Mario’s decision-making network (policy network). The numbers represent the layers and how many neurons (brain cells) are in each layer.",
+        "example": "Example: Use '256,256' for a smart brain with two layers, each having 256 neurons.",
+        "proTip": "Bigger numbers make Mario smarter but require more time to train. Start simple with something like '128,128' and increase if needed."
     },
     "vf_net": {
-        "title": "Value Function Network Architecture",
-        "description": "Defines the architecture of the value function network. The network layers are specified as comma-separated integers.",
-        "example": "Example: Use '256,256' for two layers with 256 neurons each.",
-        "proTip": "Match the architecture of the policy network for balanced training. Increase size for tasks with complex value functions."
+        "title": "Mario’s Planning Brain",
+        "description": "This sets up the network that helps Mario plan ahead and estimate the best path through a level (value function network). The numbers represent the layers and how many neurons (brain cells) are in each layer.",
+        "example": "Example: Use '256,256' for a well-equipped planning brain with two layers, each having 256 neurons.",
+        "proTip": "Keep this similar to Mario’s strategy brain (policy network) for balanced training. Use larger networks for complex levels with tricky enemies or puzzles."
     },
     "training_config": {
-        "title": "Training Configuration",
-        "description": "Defines high-level training parameters, such as the number of environments, stages, and total timesteps for training. Used to control the overall behavior of the training loop.",
-        "example": "Example: { 'num_envs': 4, 'total_timesteps': 1e7, 'stages': ['level1', 'level2'] }",
-        "proTip": "Adjust 'num_envs' based on available CPU cores to maximize training throughput."
+        "title": "How Mario Gets Ready for Training",
+        "description": "This sets up the big picture of Mario’s training, like how many levels he’ll play, how many Mushroom Kingdoms he’ll explore at once, and how long he’ll train.",
+        "example": "Example: { 'num_envs': 4, 'total_timesteps': 1e7, 'stages': ['1-1', '1-2'] } to train Mario across multiple environments.",
+        "proTip": "If you have a powerful computer, increase 'num_envs' to let Mario run through more levels at the same time and speed up his training!"
     },
     "hyperparameters": {
-        "title": "Hyperparameters",
-        "description": "Specifies low-level training parameters that control optimization, value updates, and agent behavior. Includes values such as learning rate, batch size, and discount factors.",
-        "example": "Example: { 'learning_rate': 3e-4, 'batch_size': 64, 'gamma': 0.99, 'clip_range': 0.2 }",
-        "proTip": "Tuning hyperparameters can greatly impact training performance. Start with default values and adjust based on training stability and reward trends."
+        "title": "Mario’s Training Settings",
+        "description": "These are the fine-tuned settings that control how Mario learns, like how quickly he adjusts, how many steps he takes before pausing, and how much he cares about future rewards.",
+        "example": "Example: { 'learning_rate': 3e-4, 'batch_size': 64, 'gamma': 0.99, 'clip_range': 0.2 } for balanced and stable training.",
+        "proTip": "Start with default settings and only adjust if Mario’s training is unstable or if rewards aren’t improving. Small tweaks here can have a big impact!"
     },
     "rollout_buffer_class": {
-        "title": "Rollout Buffer Class",
-        "description": "Specifies the buffer class used to store and sample rollout data during training. Defaults to the appropriate class for the selected algorithm if left None.",
-        "example": "Example: Use 'DictRolloutBuffer' for environments with dictionary observation spaces.",
-        "proTip": "Customize this value only if you need advanced buffer behavior or specific sampling strategies."
+        "title": "Mario’s Memory Box",
+        "description": "This defines the type of memory box Mario uses to store his adventures for training. The default box is optimized for most levels, so you don’t need to change this.",
+        "example": "Example: Advanced users might use 'DictRolloutBuffer' for levels with special data, like multi-part stages.",
+        "proTip": "This is an advanced feature. If you’re not sure, leave it as None, and Mario will use the best memory box for his training."
     },
     "rollout_buffer_kwargs": {
-        "title": "Rollout Buffer Keyword Arguments",
-        "description": "Additional configuration options for the rollout buffer. Accepts a dictionary of arguments passed during buffer initialization.",
-        "example": "Example: { 'gamma': 0.99, 'gae_lambda': 0.95 } for Generalized Advantage Estimation.",
-        "proTip": "Use this to fine-tune the behavior of the buffer, such as adjusting gamma or enabling time-limited discounts."
+        "title": "Mario’s Memory Box Settings",
+        "description": "These are extra settings for customizing how Mario stores his adventures in his memory box (rollout buffer). The default settings work great for most levels, so you don’t need to change this unless you’re doing advanced tweaks.",
+        "example": "Example: Advanced users might set { 'gamma': 0.98, 'gae_lambda': 0.95 } to adjust how Mario learns from rewards.",
+        "proTip": "This is an advanced feature for fine-tuning Mario’s memory. Beginners can safely leave this alone!"
     },
     "target_kl": {
-        "title": "Target KL Divergence",
-        "description": "Limits the KL divergence between updates to prevent excessively large policy changes. Useful for maintaining stable training.",
-        "example": "Example: Set 'target_kl': 0.01 to limit KL divergence during updates.",
-        "proTip": "Set this value to None if you want no KL divergence constraints. Use small values like 0.01 to enforce tighter stability."
+        "title": "How Much Mario’s Strategy Can Change",
+        "description": "This limits how much Mario’s strategy is allowed to change during training. Keeping the changes small helps Mario stay consistent and prevents wild jumps in his behavior.",
+        "example": "Example: Set 'target_kl': 0.01 to make sure Mario makes careful adjustments during training.",
+        "proTip": "For most tasks, you don’t need to set this. Use small values like 0.01 if Mario’s training becomes unstable or if he’s making erratic changes."
     }
 }

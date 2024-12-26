@@ -5,18 +5,20 @@ import subprocess
 import os
 import sys
 from pathlib import Path
-from log_manager import LogManager
 
-# Create the dynamic blueprint
-def create_tensorboard_blueprint(training_manager):
+
+def create_tensorboard_blueprint(training_manager, app_logger):
     """
-    Create the tensorboard blueprint and integrate the training_manager.
+    Create the tensorboard blueprint and integrate the training_manager and logger.
 
     :param training_manager: Global TrainingManager instance to interact with.
+    :param app_logger: Global logger instance to be shared across blueprints.
     :return: TensorBoard blueprint.
     """
+    # Create a new logger for this blueprint
+    logger = app_logger.__class__("tensorboard_routes")  # Create a scoped logger
+
     tensorboard_blueprint = Blueprint("tensorboard_routes", __name__)
-    logger = LogManager("tensorboard_routes")
 
     # Shared state for TensorBoard
     tensorboard_process = None
@@ -83,6 +85,7 @@ def create_tensorboard_blueprint(training_manager):
     @tensorboard_blueprint.route("/tensorboard")
     def tensorboard():
         """Redirect to TensorBoard UI if running, or show an error."""
+        logger.info("Rendering TensorBoard UI")
         return render_template("tensorboard.html")
 
     return tensorboard_blueprint

@@ -1,22 +1,23 @@
 # path: routes/stream_routes.py
 
 from flask import Response, Blueprint
-from log_manager import LogManager
 from utils import generate_frame_stream
 from log_manager import log_queue
 import queue
 
-def create_stream_blueprint(training_manager):
+
+def create_stream_blueprint(training_manager, app_logger):
     """
-    Create the stream blueprint and integrate the training_manager.
+    Create the stream blueprint and integrate the training_manager and logger.
 
     :param training_manager: Global TrainingManager instance to interact with.
+    :param app_logger: Global logger instance to be shared across blueprints.
     :return: Stream blueprint.
     """
-    stream_blueprint = Blueprint("stream_routes", __name__)
+    # Create a new logger for this blueprint
+    logger = app_logger.__class__("stream_routes")  # Create a scoped logger
 
-    # Create logger
-    logger = LogManager("stream_routes")
+    stream_blueprint = Blueprint("stream_routes", __name__)
 
     @stream_blueprint.route("/logs")
     def stream_logs():
@@ -35,6 +36,8 @@ def create_stream_blueprint(training_manager):
     @stream_blueprint.route("/video_feed")
     def video_feed():
         """Video streaming route for game rendering."""
+        logger.info("Starting video feed stream")
         return Response(generate_frame_stream(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
     return stream_blueprint
+

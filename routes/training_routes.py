@@ -1,18 +1,20 @@
 # path: routes/training_routes.py
 
 from flask import Blueprint, request, jsonify
-from log_manager import LogManager
 import threading
 
-def create_training_blueprint(training_manager):
+def create_training_blueprint(training_manager, app_logger):
     """
-    Create the training blueprint and integrate the training_manager.
+    Create the training blueprint and integrate the training_manager and logger.
 
     :param training_manager: Global TrainingManager instance to interact with.
+    :param app_logger: Global logger instance to be shared across blueprints.
     :return: Training blueprint.
     """
+    # Create a new logger for this blueprint
+    logger = app_logger.__class__("training_routes")  # Create a scoped logger
+
     training_blueprint = Blueprint("training_routes", __name__)
-    logger = LogManager("training_routes")
 
     # Shared state for training
     training_thread = None
@@ -83,11 +85,11 @@ def create_training_blueprint(training_manager):
         with training_lock:  # Ensure thread-safe access
             try:
                 training_active = training_manager.is_training_active()
+                logger.debug(f"Training status checked: active={training_active}")
                 return jsonify({"training": training_active})
             except Exception as e:
                 logger.error(f"Error checking training status: {e}")
                 return jsonify({"status": "error", "message": "Failed to check training status."}), 500
-
 
     @training_blueprint.route("/render_status", methods=["GET"])
     def render_status():
@@ -95,6 +97,7 @@ def create_training_blueprint(training_manager):
         with training_lock:  # Ensure thread-safe access
             try:
                 rendering = training_manager.render_manager.is_rendering() if training_manager.render_manager else False
+                logger.debug(f"Render status checked: rendering={rendering}")
                 return jsonify({"rendering": rendering})
             except Exception as e:
                 logger.error(f"Error checking rendering status: {e}")

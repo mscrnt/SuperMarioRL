@@ -2,21 +2,23 @@
 
 from flask import Blueprint, render_template
 from gui import DEFAULT_HYPERPARAMETERS, DEFAULT_PATHS, DEFAULT_TRAINING_CONFIG
-from log_manager import LogManager
+from utils import load_blueprints
 import importlib
 import inspect
-from utils import load_blueprints
 
 
-def create_dashboard_blueprint(training_manager):
+def create_dashboard_blueprint(training_manager, app_logger):
     """
-    Create the dashboard blueprint and integrate the training_manager.
+    Create the dashboard blueprint and integrate the training_manager and logger.
     
     :param training_manager: Global TrainingManager instance to interact with.
+    :param app_logger: Global logger instance to be shared across blueprints.
     :return: Dashboard blueprint.
     """
+    # Create a new logger for this blueprint
+    logger = app_logger.__class__("dashboard_routes")  # Create a scoped logger
+
     dashboard_blueprint = Blueprint("dashboard", __name__)
-    logger = LogManager("dashboard_routes")
 
     def dynamic_load_blueprints(module_name):
         """
@@ -61,7 +63,7 @@ def create_dashboard_blueprint(training_manager):
             for bp in callback_blueprints.values()
         ]
 
-        logger.info("Rendering index page", wrappers=wrappers, callbacks=callbacks)
+        logger.info("Rendering index page")
         return render_template(
             "index.html",
             title="Training Dashboard",

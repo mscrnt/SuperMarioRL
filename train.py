@@ -76,6 +76,26 @@ class TrainingManager:
         # Initialize environments and model
         self._initialize_environments_and_model()
 
+    def update_config(self, new_config):
+        """
+        Update the training configuration with a new configuration.
+        
+        :param new_config: A dictionary containing the new configuration.
+        """
+        try:
+            # Update training config and hyperparameters
+            self.config["training_config"].update(new_config.get("training_config", {}))
+            self.config["hyperparameters"].update(new_config.get("hyperparameters", {}))
+            
+            # Update enabled wrappers and callbacks
+            self.config["enabled_wrappers"] = new_config.get("enabled_wrappers", [])
+            self.config["enabled_callbacks"] = new_config.get("enabled_callbacks", [])
+            
+            logger.info("Training configuration updated successfully.")
+        except Exception as e:
+            logger.error("Failed to update configuration", exception=e)
+            raise ValueError("Invalid configuration format or data")
+
     def _merge_and_parse_config(self):
         """Merge and parse user-provided configurations."""
         default_config = {

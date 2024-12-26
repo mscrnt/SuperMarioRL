@@ -5,7 +5,6 @@ import numpy as np
 from log_manager import LogManager
 from utils import load_blueprints as Blueprint
 
-
 class EnhancedStatsWrapper(gym.Wrapper):
     """
     A wrapper to enhance environment observations with additional statistics.
@@ -28,28 +27,30 @@ class EnhancedStatsWrapper(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
 
         # Collect statistics from the environment
-        stats = np.array([
-            info.get("coins", getattr(self.env.unwrapped, "_coins", 0)),
-            info.get("score", getattr(self.env.unwrapped, "_score", 0)),
-            info.get("x_pos", getattr(self.env.unwrapped, "_x_position", 0)),
-            info.get("player_state", getattr(self.env.unwrapped, "_player_state", 0)),
-            info.get("time", getattr(self.env.unwrapped, "_time", 0)),
-            int(info.get("flag_get", getattr(self.env.unwrapped, "_flag_get", 0))),
-            info.get("world", getattr(self.env.unwrapped, "_world", 0)),
-            info.get("stage", getattr(self.env.unwrapped, "_stage", 0)),
-            {"small": 0, "tall": 1, "fireball": 2}.get(info.get("status", "small"), 0),
-        ], dtype=np.float32)
+        stats = {
+            "coins": info.get("coins", getattr(self.env.unwrapped, "_coins", 0)),
+            "score": info.get("score", getattr(self.env.unwrapped, "_score", 0)),
+            "x_pos": info.get("x_pos", getattr(self.env.unwrapped, "_x_position", 0)),
+            "player_state": info.get("player_state", getattr(self.env.unwrapped, "_player_state", 0)),
+            "time": info.get("time", getattr(self.env.unwrapped, "_time", 0)),
+            "flag_get": bool(info.get("flag_get", getattr(self.env.unwrapped, "_flag_get", 0))),
+            "world": info.get("world", getattr(self.env.unwrapped, "_world", 0)),
+            "stage": info.get("stage", getattr(self.env.unwrapped, "_stage", 0)),
+            "status": {"small": 0, "tall": 1, "fireball": 2}.get(info.get("status", "small"), 0),
+        }
 
         if done:
-            self.logger.info(f"Env {self.env_index} stats: {stats}")
+            readable_stats = ", ".join([f"{key}: {value}" for key, value in stats.items()])
+            self.logger.info(f"Env {self.env_index} stats: {readable_stats}")
 
-        processed_obs = {"frame": obs, "stats": stats}
+        processed_obs = {"frame": obs, "stats": np.array(list(stats.values()), dtype=np.float32)}
         info["stats"] = stats
         return processed_obs, reward, done, info
 
     def reset(self, **kwargs):
         obs = self.env.reset(**kwargs)
         return {"frame": obs, "stats": np.zeros(9, dtype=np.float32)}
+
 
 
 EnhancedStatsWrapperBlueprint = Blueprint(
