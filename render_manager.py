@@ -41,7 +41,7 @@ class RenderManager:
         """Update the cached policy with a thread-safe copy."""
         try:
             self.cached_policy.load_state_dict(deepcopy(self.model.policy.state_dict()))
-            logger.info("Cached policy updated successfully.")
+            logger.debug("Cached policy updated successfully.")
         except Exception as e:
             logger.error("Error while updating cached policy.", exception=e)
 

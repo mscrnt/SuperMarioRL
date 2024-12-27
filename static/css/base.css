@@ -6,11 +6,15 @@ body {
     margin: 0;
     padding: 0;
     background: linear-gradient(135deg, #000428, #004e92); /* Retro blue gradient */
+    background-repeat: no-repeat; /* Prevent the gradient from repeating */
+    background-attachment: fixed; /* Make the gradient stay fixed during scrolling */
+    background-size: cover; /* Ensure it stretches to cover the entire viewport */
     color: #fff;
     text-shadow: 0.1rem 0.1rem 0.2rem #000; /* Subtle shadow for retro look */
     overflow-x: hidden; /* Prevent horizontal scrolling */
     overflow-y: hidden; /* Prevent vertical scrolling */
 }
+
 
 header {
     background: linear-gradient(to right, #1e3c72, #2a5298) !important; /* Retro blue header gradient */

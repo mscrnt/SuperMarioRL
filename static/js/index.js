@@ -277,14 +277,39 @@ function initializeLogStreaming() {
         return;
     }
 
+    let isUserScrolling = false;
+
+    // Detect if the user is scrolling
+    logOutput.addEventListener("scroll", () => {
+        const isAtBottom =
+            logOutput.scrollHeight - logOutput.scrollTop === logOutput.clientHeight;
+        isUserScrolling = !isAtBottom;
+    });
+
     const eventSource = new EventSource("/stream/logs"); // Adjusted route
     eventSource.onmessage = (event) => {
         const newLogEntry = document.createElement("div");
         newLogEntry.textContent = event.data;
         logOutput.appendChild(newLogEntry);
-        logOutput.scrollTop = logOutput.scrollHeight; // Auto-scroll to the bottom
+
+        // Only auto-scroll if the user is not actively scrolling
+        if (!isUserScrolling) {
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
     };
+
+    // Allow re-enabling auto-scroll when the user scrolls back to the bottom
+    const observer = new MutationObserver(() => {
+        const isAtBottom =
+            logOutput.scrollHeight - logOutput.scrollTop === logOutput.clientHeight;
+        if (isAtBottom) {
+            isUserScrolling = false; // Re-enable auto-scrolling
+        }
+    });
+
+    observer.observe(logOutput, { childList: true });
 }
+
 
 // Initialize video feed logic with placeholder
 async function initializeVideoFeed() {

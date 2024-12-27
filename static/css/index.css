@@ -1,7 +1,7 @@
 /* Video Container */
 .video-container {
     width: 80%;
-    max-width: 24rem; /* Keeps aspect ratio manageable */
+    max-width: 38rem; /* Keeps aspect ratio manageable */
     aspect-ratio: 4 / 3;
     margin: 0 auto;
     overflow: hidden;
