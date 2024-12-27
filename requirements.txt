@@ -44,3 +44,4 @@ flask
 requests
 icecream
 concurrent-log-handler
+psycopg2-binary
