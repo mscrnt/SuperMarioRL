@@ -1,9 +1,8 @@
-/app.bak
-/checkpoints
-/configs
-/logs
+/app/checkpoints
+/app/configs
+/app/logs
 /venv
 /wvenv
 /__pycache__*
 *.pyc
-routes/__pycache__/*.pyc
+/app/routes/__pycache__/*.pyc
