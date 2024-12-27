@@ -5,4 +5,5 @@
 /venv
 /wvenv
 /__pycache__*
-/*.pyc
+*.pyc
+routes/__pycache__/*.pyc
