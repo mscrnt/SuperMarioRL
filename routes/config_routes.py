@@ -88,7 +88,7 @@ def create_config_blueprint(training_manager, app_logger):
         """List all configurations."""
         try:
             configs = [p.stem for p in CONFIG_DIR.glob("*.json")]
-            logger.info(f"Listed configurations: {configs}")
+            logger.debug(f"Listed configurations: {configs}")
             return jsonify({"status": "success", "configs": configs})
         except Exception as e:
             logger.error(f"Error listing configurations: {e}")

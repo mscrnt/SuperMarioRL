@@ -95,7 +95,7 @@ RenderCallbackBlueprint = Blueprint(
     arg_map={
         "training_manager": "training_manager",  # Pass the TrainingManager directly
     },
-    name="Render Callback",
+    name="Model Sync",
     description="Signals the TrainingManager to update cached policy during rollouts.",
 )
 

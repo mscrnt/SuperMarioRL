@@ -9,6 +9,7 @@ body {
     color: #fff;
     text-shadow: 0.1rem 0.1rem 0.2rem #000; /* Subtle shadow for retro look */
     overflow-x: hidden; /* Prevent horizontal scrolling */
+    overflow-y: hidden; /* Prevent vertical scrolling */
 }
 
 header {
@@ -52,7 +53,13 @@ nav ul li a:hover {
 }
 
 main {
-    padding: 2rem;
+    padding: 1rem;
+}
+
+iframe {
+    width: 100%;
+    height: calc(100vh - 100px);
+    border: none;
 }
 
 footer {

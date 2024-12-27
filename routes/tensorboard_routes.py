@@ -41,7 +41,7 @@ def create_tensorboard_blueprint(training_manager, app_logger):
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                 )
-                logger.info(f"TensorBoard started with executable: {tensorboard_executable}")
+                logger.debug(f"TensorBoard started with executable: {tensorboard_executable}")
             except FileNotFoundError as e:
                 logger.error(f"Failed to start TensorBoard: {e}")
             except Exception as e:
@@ -85,7 +85,7 @@ def create_tensorboard_blueprint(training_manager, app_logger):
     @tensorboard_blueprint.route("/tensorboard")
     def tensorboard():
         """Redirect to TensorBoard UI if running, or show an error."""
-        logger.info("Rendering TensorBoard UI")
+        logger.debug("Rendering TensorBoard UI")
         return render_template("tensorboard.html")
 
     return tensorboard_blueprint

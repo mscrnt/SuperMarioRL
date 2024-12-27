@@ -101,7 +101,6 @@ def create_training_blueprint(training_manager, app_logger):
                     if training_manager.render_manager
                     else False
                 )
-                logger.debug(f"Render status checked: rendering={rendering}")
                 return jsonify({"rendering": rendering})
             except Exception as e:
                 logger.error(f"Error checking rendering status: {e}")

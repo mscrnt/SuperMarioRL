@@ -30,7 +30,7 @@ def create_dashboard_blueprint(training_manager, app_logger):
                 name: obj for name, obj in inspect.getmembers(module)
                 if isinstance(obj, load_blueprints)  # Ensure only load_blueprints instances are loaded
             }
-            logger.info(f"Loaded blueprints from {module_name}: {list(blueprints.keys())}")
+            logger.debug(f"Loaded blueprints from {module_name}: {list(blueprints.keys())}")
             return blueprints
         except Exception as e:
             logger.error(f"Error loading blueprints from {module_name}: {e}")

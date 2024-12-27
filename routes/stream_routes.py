@@ -30,13 +30,13 @@ def create_stream_blueprint(training_manager, app_logger):
                 except queue.Empty:
                     continue
 
-        logger.info("Starting log streaming")
+        logger.debug("Starting log streaming")
         return Response(generate(), mimetype="text/event-stream")
 
     @stream_blueprint.route("/video_feed")
     def video_feed():
         """Video streaming route for game rendering."""
-        logger.info("Starting video feed stream")
+        logger.debug("Starting video feed stream")
         return Response(generate_frame_stream(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
     return stream_blueprint
