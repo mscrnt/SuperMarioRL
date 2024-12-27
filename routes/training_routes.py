@@ -96,11 +96,27 @@ def create_training_blueprint(training_manager, app_logger):
         """Check if rendering is active."""
         with training_lock:  # Ensure thread-safe access
             try:
-                rendering = training_manager.render_manager.is_rendering() if training_manager.render_manager else False
+                rendering = (
+                    training_manager.render_manager.is_rendering()
+                    if training_manager.render_manager
+                    else False
+                )
                 logger.debug(f"Render status checked: rendering={rendering}")
                 return jsonify({"rendering": rendering})
             except Exception as e:
                 logger.error(f"Error checking rendering status: {e}")
                 return jsonify({"status": "error", "message": "Failed to check rendering status."}), 500
+
+    @training_blueprint.route("/model_status", methods=["GET"])
+    def model_status():
+        """Check if the model has been updated."""
+        with training_lock:  # Ensure thread-safe access
+            try:
+                model_updated = training_manager.is_model_updated()
+                logger.debug(f"Model status checked: updated={model_updated}")
+                return jsonify({"model_updated": model_updated})
+            except Exception as e:
+                logger.error(f"Error checking model status: {e}")
+                return jsonify({"status": "error", "message": "Failed to check model status."}), 500
 
     return training_blueprint

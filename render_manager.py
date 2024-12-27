@@ -15,7 +15,7 @@ class RenderManager:
     """
     Manages rendering in a separate thread to ensure it does not block training.
     """
-    def __init__(self, render_env, model, cache_update_interval=120, training_active_flag=None):
+    def __init__(self, render_env, model, cache_update_interval=120, training_active_flag=None, model_updated_flag=None):
         if render_env is None or model is None:
             raise ValueError("Both 'render_env' and 'model' must be provided to initialize RenderManager.")
 
@@ -27,7 +27,8 @@ class RenderManager:
         self.render_thread = None
         self.obs = None
         self.training_active_flag = training_active_flag or (lambda: True)
-        self.rendering_active = False
+        self.model_updated_flag = model_updated_flag or threading.Event()  # Optional signal for model updates
+        self.rendering_active = threading.Event()  # Rendering status flag
 
         try:
             self.cached_policy = deepcopy(self.model.policy)
@@ -48,9 +49,18 @@ class RenderManager:
         """Rendering loop that runs in the background."""
         try:
             self.obs = self.render_env.reset()
-            self.rendering_active = True  # Indicate rendering has started
+            self.rendering_active.set()  # Indicate rendering has started
             logger.info("Rendering thread started successfully.")
             while not self.done_event.is_set():
+                if not self.training_active_flag():
+                    logger.info("Training has stopped; ending render loop.")
+                    break
+
+                # Update cached policy if model has been updated
+                if self.model_updated_flag.is_set():
+                    self._cache_policy()
+                    self.model_updated_flag.clear()
+
                 try:
                     with torch.no_grad():
                         action, _ = self.cached_policy.predict(self.obs, deterministic=False)
@@ -64,9 +74,8 @@ class RenderManager:
         except Exception as e:
             logger.error("Failed to initialize rendering loop.", exception=e)
         finally:
-            self.rendering_active = False  # Reset flag when rendering stops
+            self.rendering_active.clear()  # Reset flag when rendering stops
             logger.info("Rendering thread has stopped.")
-
 
     def start(self):
         """Start the render thread and the model caching mechanism."""
@@ -78,12 +87,11 @@ class RenderManager:
             logger.info("RenderManager started successfully.")
         except Exception as e:
             logger.error("Failed to start RenderManager.", exception=e)
-            self.rendering_active = False
+            self.rendering_active.clear()
 
     def is_rendering(self):
         """Return the rendering status."""
-        return self.rendering_active and not self.done_event.is_set()
-
+        return self.rendering_active.is_set()
 
     def _update_policy_loop(self):
         """Periodically update the cached policy."""

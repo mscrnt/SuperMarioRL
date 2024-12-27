@@ -18,7 +18,9 @@ class TrainingManager:
     def __init__(self, config=None):
         self.config = config or {}
         self.training_active_event = threading.Event()
-        self.training_active_event.clear() 
+        self.training_active_event.clear()
+        self.model_updated_flag = threading.Event()
+        self.model_updated_flag.clear()
         self.render_manager = None
         self.model = None
         self.env = None
@@ -29,9 +31,7 @@ class TrainingManager:
 
     @staticmethod
     def load_blueprints(module_name):
-        """
-        Dynamically load all blueprints from a given module.
-        """
+        """Dynamically load all blueprints from a given module."""
         try:
             module = importlib.import_module(module_name)
             blueprints = {
@@ -56,6 +56,18 @@ class TrainingManager:
         """Check if training is active."""
         return self.training_active_event.is_set()
 
+    def is_model_updated(self):
+        """Check if the model has been updated."""
+        return self.model_updated_flag.is_set()
+
+    def clear_model_updated(self):
+        """Clear the model updated flag."""
+        self.model_updated_flag.clear()
+
+    def set_model_updated(self):
+        """Set the model updated flag."""
+        self.model_updated_flag.set()
+
     def initialize_training(self):
         """Initialize training configurations, environments, and the model."""
         logger.debug("Initializing training with config", extra={"config": self.config})
@@ -76,21 +88,21 @@ class TrainingManager:
         # Initialize environments and model
         self._initialize_environments_and_model()
 
+        # Initialize the RenderManager
+        self.render_manager = RenderManager(
+            render_env=self.render_env,
+            model=self.model,
+            training_active_flag=self.is_training_active,
+            model_updated_flag=self.model_updated_flag,
+        )
+
     def update_config(self, new_config):
-        """
-        Update the training configuration with a new configuration.
-        
-        :param new_config: A dictionary containing the new configuration.
-        """
+        """Update the training configuration with a new configuration."""
         try:
-            # Update training config and hyperparameters
             self.config["training_config"].update(new_config.get("training_config", {}))
             self.config["hyperparameters"].update(new_config.get("hyperparameters", {}))
-            
-            # Update enabled wrappers and callbacks
             self.config["enabled_wrappers"] = new_config.get("enabled_wrappers", [])
             self.config["enabled_callbacks"] = new_config.get("enabled_callbacks", [])
-            
             logger.info("Training configuration updated successfully.")
         except Exception as e:
             logger.error("Failed to update configuration", exception=e)
@@ -100,7 +112,7 @@ class TrainingManager:
         """Merge and parse user-provided configurations."""
         default_config = {
             "num_envs": 1,
-            "stages": [],  # Default to an empty list
+            "stages": [],
             "random_stages": True,
             "total_timesteps": 32000000,
             "n_steps": 2048,
@@ -172,10 +184,8 @@ class TrainingManager:
                 float(default_config["clip_range_vf_start"]), float(default_config["clip_range_vf_end"])
             )
 
-        # Ensure wrappers and callbacks are included in the final configuration
         default_config["enabled_wrappers"] = enabled_wrappers
         default_config["enabled_callbacks"] = enabled_callbacks
-
         self.config = default_config
 
     def _initialize_callbacks_and_wrappers(self):
@@ -190,7 +200,9 @@ class TrainingManager:
         for name, blueprint in self.callback_blueprints.items():
             if blueprint.is_required() or name in enabled_callbacks or blueprint.component_class.__name__ in enabled_callbacks:
                 logger.debug(f"Initializing callback: {blueprint.name}")
-                self.callback_instances.append(blueprint.create_instance(config=self.config, training_manager=self))
+                self.callback_instances.append(
+                    blueprint.create_instance(config=self.config, training_manager=self)
+                )
             else:
                 logger.warning(f"Callback '{blueprint.name}' not selected or not required. Skipping.")
 
@@ -205,11 +217,10 @@ class TrainingManager:
         for name, blueprint in self.wrapper_blueprints.items():
             if blueprint.is_required() or name in enabled_wrappers or blueprint.component_class.__name__ in enabled_wrappers:
                 logger.debug(f"Selecting wrapper: {blueprint.name}")
-                self.selected_wrappers.append(blueprint.name)  # Use the name for create_env
+                self.selected_wrappers.append(blueprint.name)
             else:
                 logger.warning(f"Wrapper '{blueprint.name}' not selected or not required. Skipping.")
 
-        # Log final selected components by their names
         logger.debug(f"Final selected wrappers: {self.selected_wrappers}")
         logger.debug(f"Final selected callbacks: {[callback.__class__.__name__ for callback in self.callback_instances]}")
 
@@ -257,7 +268,6 @@ class TrainingManager:
                 seed=self.config["seed"],
                 device=self.config["device"],
             )
-            self.render_manager = RenderManager(render_env=self.render_env, model=self.model)
         except Exception as e:
             logger.error("Error initializing environments or model.", exception=e)
             raise
