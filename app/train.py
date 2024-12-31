@@ -11,12 +11,20 @@ import threading
 import importlib
 import inspect
 
+
 logger = LogManager("TrainingManager")
 
 
 class TrainingManager:
-    def __init__(self, config=None):
+    def __init__(self, config=None, db_manager=None):
+        """
+        Initialize the TrainingManager.
+
+        :param config: Configuration for training.
+        :param db_manager: Instance of the DBManager for database operations.
+        """
         self.config = config or {}
+        self.db_manager = db_manager  # Assign the db_manager
         self.training_active_event = threading.Event()
         self.training_active_event.clear()
         self.model_updated_flag = threading.Event()
@@ -227,9 +235,12 @@ class TrainingManager:
     def _initialize_environments_and_model(self):
         """Initialize the environment and the model."""
         try:
-            # Create render environment
+            # Pass db_manager when creating the render environment
             self.render_env = create_env(
-                env_index=0, selected_wrappers=self.selected_wrappers, blueprints=self.wrapper_blueprints
+                env_index=0,
+                selected_wrappers=self.selected_wrappers,
+                blueprints=self.wrapper_blueprints,
+                db_manager=self.db_manager  # Pass db_manager here
             )()
 
             # Create training environments
@@ -241,6 +252,7 @@ class TrainingManager:
                     env_index=i + 1,
                     selected_wrappers=self.selected_wrappers,
                     blueprints=self.wrapper_blueprints,
+                    db_manager=self.db_manager  # Pass db_manager here
                 )
                 for i in range(num_envs)
             ]
@@ -271,6 +283,7 @@ class TrainingManager:
         except Exception as e:
             logger.error("Error initializing environments or model.", exception=e)
             raise
+
 
     def start_training(self):
         """Start the training loop and rendering."""

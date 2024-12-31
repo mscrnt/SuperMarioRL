@@ -3,16 +3,20 @@
 from flask import Blueprint, request, jsonify
 import threading
 
-def create_training_blueprint(training_manager, app_logger):
+def create_training_blueprint(training_manager, app_logger, db_manager):
     """
-    Create the training blueprint and integrate the training_manager and logger.
+    Create the training blueprint and integrate the training_manager, logger, and db_manager.
 
     :param training_manager: Global TrainingManager instance to interact with.
     :param app_logger: Global logger instance to be shared across blueprints.
+    :param db_manager: Database manager instance to provide database access.
     :return: Training blueprint.
     """
     # Create a new logger for this blueprint
     logger = app_logger.__class__("training_routes")  # Create a scoped logger
+
+    # Pass the db_manager to the training_manager
+    training_manager.db_manager = db_manager
 
     training_blueprint = Blueprint("training_routes", __name__)
 

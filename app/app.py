@@ -1,7 +1,7 @@
 # path: ./app.py
 
 from flask import Flask, render_template, request
-from global_state import training_manager, app_logger  # Import global instances
+from global_state import training_manager, app_logger # Import global instances
 from gui import DEFAULT_HYPERPARAMETERS, DEFAULT_TRAINING_CONFIG
 from routes.training_routes import create_training_blueprint
 from routes.config_routes import create_config_blueprint
@@ -11,6 +11,8 @@ from routes.stream_routes import create_stream_blueprint
 import logging
 import requests
 from threading import Timer
+from db_manager import DBManager
+
 
 app = Flask(__name__)
 logger = app_logger  # Use the global logger
@@ -23,7 +25,7 @@ def suppress_logging():
         log.setLevel(logging.ERROR)
 
 # Register Blueprints with logger explicitly passed
-app.register_blueprint(create_training_blueprint(training_manager, app_logger), url_prefix="/training")
+app.register_blueprint(create_training_blueprint(training_manager, app_logger, DBManager), url_prefix="/training")
 app.register_blueprint(create_config_blueprint(training_manager, app_logger), url_prefix="/config")
 app.register_blueprint(create_tensorboard_blueprint(training_manager, app_logger), url_prefix="/tensorboard")
 app.register_blueprint(create_stream_blueprint(training_manager, app_logger), url_prefix="/stream")
@@ -55,12 +57,3 @@ def start_tensorboard_via_api():
         logger.error(f"Unexpected error when trying to start TensorBoard: {e}")
 
 Timer(1, start_tensorboard_via_api).start()
-
-
-if __name__ == "__main__":
-    logger.info("Starting application and initializing components...")
-    # Launch the app
-    from threading import Timer
-    # Delay the API call slightly to ensure the app is fully started
-    Timer(1, start_tensorboard_via_api).start()
-    app.run(debug=True)

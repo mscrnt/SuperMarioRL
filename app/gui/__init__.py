@@ -40,5 +40,13 @@ DEFAULT_TRAINING_CONFIG = {
     "autosave_freq": 100000,
 }
 
+DB_CONFIG = {
+    "dbname": "mariodb",
+    "user": "mario",
+    "password": "peach",
+    "host": "127.0.0.1",
+    "port": 5432,
+}
+
 # Exported symbols
-__all__ = ["DEFAULT_TRAINING_CONFIG", "DEFAULT_HYPERPARAMETERS", "DEFAULT_PATHS"]
+__all__ = ["DEFAULT_TRAINING_CONFIG", "DEFAULT_HYPERPARAMETERS", "DEFAULT_PATHS", "DB_CONFIG"]

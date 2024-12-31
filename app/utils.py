@@ -106,18 +106,9 @@ def create_mario_env(env, wrappers_order):
                 env = wrapper_func(env, *args, **kwargs)
     return env
 
-
-
-def create_env(random_stages=False, stages=None, env_index=1, selected_wrappers=None, blueprints=None):
+def create_env(random_stages=False, stages=None, env_index=1, selected_wrappers=None, blueprints=None, db_manager=None):
     """
     Creates and wraps the Super Mario environment with dynamic wrapper application.
-    
-    :param random_stages: Whether to use random stages in the environment.
-    :param stages: A list of specific stages to include (used with random_stages=True).
-    :param env_index: Index of the environment for logging and configuration.
-    :param selected_wrappers: Names of wrappers to apply dynamically.
-    :param blueprints: Dictionary of wrapper blueprints to use for dynamic application.
-    :return: A callable function that initializes and returns the wrapped environment.
     """
     def _init():
         env_logger = LogManager(f"env_{env_index}")
@@ -135,63 +126,41 @@ def create_env(random_stages=False, stages=None, env_index=1, selected_wrappers=
             env = gym_super_mario_bros.make("SuperMarioBros-v0")
             env_logger.debug("Base environment created without random stages.")
 
-        # Predefined wrappers in the desired order with required arguments
+        # Process dynamically selected wrappers
         wrappers_order = [
             (JoypadSpace, [COMPLEX_MOVEMENT], {}),
             (MaxAndSkipEnv, [], {}),
             (MarioRescale84x84, [], {}),
         ]
-
-        # Process dynamically selected wrappers
+        
         if selected_wrappers and blueprints:
-            unique_wrapper_keys = set()
             for wrapper_name in selected_wrappers:
                 env_logger.debug(f"Processing wrapper: {wrapper_name}")
-                # Match blueprint by friendly name or component class name
                 blueprint = next(
                     (bp for bp in blueprints.values()
                      if bp.name == wrapper_name or bp.component_class.__name__ == wrapper_name),
                     None,
                 )
                 if blueprint:
-                    # Avoid duplicates
-                    if blueprint.component_class.__name__ not in unique_wrapper_keys:
-                        wrappers_order.append((blueprint, [], {"config": {"env_index": env_index}}))
-                        unique_wrapper_keys.add(blueprint.component_class.__name__)
-                        env_logger.info(f"Wrapper {blueprint.name} added to the order.")
-                    else:
-                        env_logger.warning(f"Duplicate wrapper {blueprint.name} ignored.")
+                    wrapper_kwargs = {"env_index": env_index}
+                    if "db_manager" in blueprint.arg_map:
+                        wrapper_kwargs["db_manager"] = db_manager
+                    wrappers_order.append((blueprint.component_class, [], wrapper_kwargs))
+                    env_logger.info(f"Wrapper {blueprint.name} added to the order.")
                 else:
                     env_logger.warning(f"Wrapper {wrapper_name} not found in blueprints. Skipping.")
 
-        # Add final wrappers
-        wrappers_order.extend([
-            (PixelNormalization, [], {}),
-            (ImageToPyTorch, [], {}),
-        ])
-
-        # Deduplicate wrappers to ensure order is maintained without redundancy
-        seen_wrappers = set()
-        deduplicated_wrappers_order = []
-        for wrapper in wrappers_order:
-            wrapper_key = wrapper[0].__name__ if callable(wrapper[0]) else wrapper[0].name
-            if wrapper_key not in seen_wrappers:
-                deduplicated_wrappers_order.append(wrapper)
-                seen_wrappers.add(wrapper_key)
-
-        # Apply all wrappers in the deduplicated order
-        env_logger.debug(
-            "Applying wrappers in order: "
-            + ", ".join(
-                [w[0].__name__ if callable(w[0]) else w[0].name for w in deduplicated_wrappers_order]
-            )
-        )
-        env = create_mario_env(env, deduplicated_wrappers_order)
+        # Apply wrappers
+        for wrapper_class, args, kwargs in wrappers_order:
+            env = wrapper_class(env, *args, **kwargs)
 
         env_logger.info(f"Environment {env_index} initialized successfully with all wrappers.")
         return env
 
     return _init
+
+
+
 
 def render_frame_to_queue(first_env, throttle_interval=0.05):
     """
