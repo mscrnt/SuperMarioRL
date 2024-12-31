@@ -29,7 +29,7 @@ app.register_blueprint(create_training_blueprint(training_manager, app_logger, D
 app.register_blueprint(create_config_blueprint(training_manager, app_logger), url_prefix="/config")
 app.register_blueprint(create_tensorboard_blueprint(training_manager, app_logger), url_prefix="/tensorboard")
 app.register_blueprint(create_stream_blueprint(training_manager, app_logger), url_prefix="/stream")
-app.register_blueprint(create_dashboard_blueprint(training_manager, app_logger))  # No prefix for the dashboard
+app.register_blueprint(create_dashboard_blueprint(training_manager, app_logger, DBManager))  # No prefix for the dashboard
 
 @app.route("/", methods=["GET"])
 def index():

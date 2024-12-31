@@ -194,3 +194,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.error("Training Dashboard link not found.");
     }
 });
+
+// Add event listener for the Metrics Dashboard link
+const metricsLink = document.getElementById("metrics-dashboard-link");
+if (metricsLink) {
+    metricsLink.addEventListener("click", async (event) => {
+        event.preventDefault();
+        await loadDynamicContent("/dashboard/metrics", initializeListenersForMetricsDashboard);
+    });
+} else {
+    console.error("Metrics Dashboard link not found.");
+}

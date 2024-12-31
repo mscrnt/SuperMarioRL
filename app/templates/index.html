@@ -20,6 +20,7 @@
                 <ul class="nav-list">
                     <li><a href="/dashboard/training" id="training-dashboard-link" class="nav-link" aria-label="Training Dashboard">Training</a></li>
                     <li><a href="/tensorboard" id="tensorboard-link" class="nav-link" aria-label="TensorBoard Dashboard">TensorBoard</a></li>
+                    <li><a href="/dashboard/metrics" id="metrics-dashboard-link" class="nav-link" aria-label="Metrics Dashboard">Metrics</a></li>
                 </ul>
             </nav>
         </div>
@@ -48,5 +49,7 @@
     <!-- Core Scripts -->
     <script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/training_dashboard.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/metrics_dashboard.js') }}" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>

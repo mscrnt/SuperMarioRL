@@ -1,0 +1,73 @@
+<!-- path: templates/metrics_dashboard.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrics Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/metrics_dashboard.css') }}">
+</head>
+<body>
+    <!-- Reward Comparison Meter -->
+    <div id="reward-comparison-meter" class="meter-container">
+        <h2>Reward Comparison</h2>
+        <div class="meter-line">
+            <div id="reward-meter-tick"></div>
+        </div>
+    </div>
+
+    <!-- Flexible Grid Layout -->
+    <div class="grid-container">
+        <!-- Top Row -->
+        <div class="grid-item" id="cell-1">
+            <h2>Monitor Env - Line Chart</h2>
+            <canvas id="env0-line-chart"></canvas>
+        </div>
+        <div class="grid-item" id="cell-2">
+            <h2>Monitor Env - Placeholder</h2>
+            <canvas id="env0-placeholder-chart"></canvas>
+        </div>
+        <div class="grid-item" id="cell-3">
+            <h2>Training - Line Chart</h2>
+            <canvas id="training-line-chart"></canvas>
+        </div>
+
+        <!-- Left Side -->
+        <div class="grid-item" id="cell-4">
+            <h2>Monitor Env - Reward Distribution</h2>
+            <canvas id="env0-reward-chart"></canvas>
+        </div>
+
+        <!-- Game Render (Center Anchor) -->
+        <div class="grid-item" id="cell-5">
+            <div class="video-container">
+                <img id="video-placeholder" src="{{ url_for('static', filename='favicon.ico') }}" alt="Game Render Placeholder">
+                <img id="video-feed" src="/stream/video_feed" alt="Game Render" style="display: none;">
+            </div>
+        </div>
+
+        <!-- Right Side -->
+        <div class="grid-item" id="cell-6">
+            <h2>Training - Placeholder</h2>
+            <canvas id="training-placeholder-chart"></canvas>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="grid-item" id="cell-7">
+            <h2>Placeholder</h2>
+            <p>This cell is reserved for future content.</p>
+        </div>
+        <div class="grid-item" id="cell-8">
+            <h2>Training - Reward Distribution</h2>
+            <canvas id="training-reward-chart"></canvas>
+        </div>
+        <div class="grid-item" id="cell-9">
+            <h2>Training - Comparison Chart</h2>
+            <canvas id="training-comparison-chart"></canvas>
+        </div>
+    </div>
+</body>
+</html>
+
+
