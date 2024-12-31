@@ -1,198 +1,52 @@
 <!-- path: templates/index.html -->
 
-{% extends "base.html" %}
-
-{% block content %}
-<section>
-    <head>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-    </head>
-    <div style="display: flex; align-items: center; justify-content: space-between;">
-        <h1><i class="fas fa-gamepad"></i> Training Dashboard</h1>
-        <div id="config-manager" style="display: flex; align-items: center; gap: 10px;">
-            <label for="config-select" style="margin: 0;">Configuration:</label>
-            <select id="config-select">
-                <option value="default">Default</option>
-            </select>
-            <button id="load-config">Load</button>
-            <button id="save-changes" class="action-button">
-                <i class="fas fa-save"></i> Save
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/training_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="32x32" type="image/icon">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="header">
+        <div class="header-left">
+            <h1>Super Mario RL Dashboard</h1>
+            <nav>
+                <ul class="nav-list">
+                    <li><a href="/dashboard/training" id="training-dashboard-link" class="nav-link" aria-label="Training Dashboard">Training</a></li>
+                    <li><a href="/tensorboard" id="tensorboard-link" class="nav-link" aria-label="TensorBoard Dashboard">TensorBoard</a></li>
+                </ul>
+            </nav>
+        </div>
+        <div id="training-status" style="text-align: right;">
+            <h2 style="margin: 0;">Status: <span id="status" style="color: #FFA500;">Connecting...</span></h2>
+            <button id="start-training" class="action-button" disabled>
+                <i class="fas fa-play"></i> Start
             </button>
-            <button id="delete-config">Delete</button>
+            <button id="stop-training" class="action-button" disabled>
+                <i class="fas fa-stop"></i> Stop
+            </button>
         </div>
+    </header>
+
+    <!-- Main Content Section -->
+    <main id="dynamic-content">
+        <h2>Welcome to Super Mario RL Dashboard!</h2>
+        <p>Select a section from the navigation bar to begin.</p>
+    </main>
+
+    <!-- Error Placeholder -->
+    <div id="error-placeholder" style="display: none; color: red; text-align: center; margin-top: 20px;">
+        <p>An error occurred while loading content. Please try again.</p>
     </div>
 
-    <div id="main-container" style="display: flex; gap: 20px; flex-wrap: nowrap; margin-top: 20px;">
-        <!-- Left Column: Configurable Items -->
-        <div style="flex: 2; max-width: 40%;">
-            <!-- Training Config Section -->
-            <div>
-                <h2>
-                    <i class="fas fa-cogs"></i> Training Config
-                    <i class="fas fa-question-circle tooltip-icon" onclick="openModal('training-config')"></i>
-                </h2>
-                <div class="grid-container">
-                    {% for key, value in training_config.items() %}
-                    <div class="grid-item">
-                        <label>
-                            {{ key | replace("_", " ") | title }}
-                            <i class="fas fa-info-circle tooltip-icon" onclick="openModal('{{ key }}')"></i>
-                            {% if value is boolean %}
-                            <select name="training_config[{{ key }}]" class="config-input">
-                                <option value="True" {% if value == True %}selected{% endif %}>True</option>
-                                <option value="False" {% if value == False %}selected{% endif %}>False</option>
-                            </select>
-                            {% else %}
-                            <input type="text" name="training_config[{{ key }}]" value="{{ value }}" class="config-input">
-                            {% endif %}
-                        </label>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <!-- Wrappers and Callbacks Section -->
-                <div id="environment_container" style="display: flex; gap: 40px; margin-top: 20px;">
-                    <!-- Wrappers Section -->
-                    <div id="wrappers-section" style="flex: 1;">
-                        <h2>
-                            <i class="fas fa-layer-group"></i> Wrappers
-                            <i class="fas fa-info-circle tooltip-icon" onclick="openModal('wrappers')"></i>
-                        </h2>
-                        <div class="wrappers-container">
-                            {% for wrapper in wrappers %}
-                            <div class="wrapper-item" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ccc; padding: 10px 0; user-select: none;">
-                                <span style="display: flex; align-items: center; gap: 5px; min-width: max-content;">
-                                    <span>{{ wrapper.name }}</span>
-                                    <i class="fa-solid fa-circle-question tooltip-icon" title="{{ wrapper.description }}"></i>
-                                </span>
-                                <div style="display: flex; align-items: center; justify-content: center;">
-                                    <input
-                                        type="checkbox"
-                                        name="wrappers[]"
-                                        value="{{ wrapper.name }}"
-                                        data-key="{{ wrapper.name|replace(' ', '') }}"
-                                        class="wrapper-checkbox"
-                                        style="margin: 0; vertical-align: middle;"
-                                        {% if wrapper.required %}checked disabled{% endif %}>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <!-- Callbacks Section -->
-                    <div id="callbacks-section" style="flex: 1;">
-                        <h2>
-                            <i class="fas fa-bell"></i> Callbacks
-                            <i class="fas fa-info-circle tooltip-icon" onclick="openModal('callbacks')"></i>
-                        </h2>
-                        <div class="callbacks-container">
-                            {% for callback in callbacks %}
-                            <div class="callback-item" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ccc; padding: 10px 0; user-select: none;">
-                                <span style="display: flex; align-items: center; gap: 5px; min-width: max-content;">
-                                    <span>{{ callback.name }}</span>
-                                    <i class="fa-solid fa-circle-question tooltip-icon" title="{{ callback.description }}"></i>
-                                </span>
-                                <div style="display: flex; align-items: center; justify-content: center;">
-                                    <input
-                                        type="checkbox"
-                                        name="callbacks[]"
-                                        value="{{ callback.name }}"
-                                        data-key="{{ callback.name|replace(' ', '') }}"
-                                        class="callback-checkbox"
-                                        style="margin: 0; vertical-align: middle;"
-                                        {% if callback.required %}checked disabled{% endif %}>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Hyperparameters Section -->
-            <div style="margin-top: 20px;">
-                <h2>
-                    <i class="fas fa-sliders-h"></i> Hyperparameters
-                    <i class="fas fa-question-circle tooltip-icon" onclick="openModal('hyperparameters')"></i>
-                </h2>
-                <div class="grid-container hyperparameters-grid">
-                    {% for key, value in hyperparameters.items() %}
-                    <div class="grid-item">
-                        <label>
-                            {{
-                                "Policy pi (Comma-separated):" if key == "pi_net"
-                                else "Policy vf (Comma-separated):" if key == "vf_net"
-                                else key | replace("_", " ") | title
-                            }}
-                            <i class="fas fa-info-circle tooltip-icon" onclick="openModal('{{ key }}')"></i>
-                            {% if key in ["normalize_advantage"] %}
-                            <select name="hyperparameters[{{ key }}]" class="config-input">
-                                <option value="True" {% if value == True %}selected{% endif %}>True</option>
-                                <option value="False" {% if value == False %}selected{% endif %}>False</option>
-                            </select>
-                            {% elif key in ["device"] %}
-                            <select name="hyperparameters[{{ key }}]" class="config-input">
-                                <option value="auto" {% if value == "auto" %}selected{% endif %}>Auto</option>
-                                <option value="cpu" {% if value == "cpu" %}selected{% endif %}>CPU</option>
-                                <option value="cuda" {% if value == "cuda" %}selected{% endif %}>CUDA</option>
-                            </select>
-                            {% elif key == "batch_size" %}
-                            <select name="hyperparameters[{{ key }}]" id="batch-size-select" class="config-input">
-                                <option value="" disabled>Select a valid batch size</option>
-                            </select>
-                            {% elif key in ["n_steps", "n_epochs", "seed", "stats_window_size"] %}
-                            <input type="number" name="hyperparameters[{{ key }}]" step="1" value="{{ value }}" class="config-input" id="{{ key }}">
-                            {% elif key in ["clip_range_start", "clip_range_end", "gamma", "gae_lambda", "vf_coef", "ent_coef", "max_grad_norm", "learning_rate_start", "learning_rate_end"] %}
-                            <input type="number" name="hyperparameters[{{ key }}]" step="0.0001" value="{{ value }}" class="config-input">
-                            {% elif key in ["pi_net", "vf_net"] %}
-                            <input type="text" name="hyperparameters[{{ key }}]" value="{{ value }}" pattern="(\d+,)*\d+" title="Comma-separated integers (e.g., 256,256)" class="config-input">
-                            {% elif value is none %}
-                            <input type="text" name="hyperparameters[{{ key }}]" value="" placeholder="Optional" class="config-input">
-                            {% else %}
-                            <input type="text" name="hyperparameters[{{ key }}]" value="{{ value }}" class="config-input">
-                            {% endif %}
-                        </label>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column: Render and Logs -->
-        <div style="flex: 1; min-width: 300px;">
-            <!-- Game Render Section -->
-            <div id="training-render" style="margin-bottom: 20px;">
-                <div class="video-container">
-                    <img id="video-placeholder" src="{{ url_for('static', filename='favicon.ico') }}" alt="Game Render Placeholder" style="background-color: #252525; width: 100%; height: 100%; object-fit: contain;">
-                    <img id="video-feed" src="/stream/video_feed" alt="Game Render" style="display: none; width: 100%; height: 100%; object-fit: contain;">
-                </div>
-            </div>
-
-            <!-- Training Logs Section -->
-            <div id="training-logs">
-                <h2><i class="fas fa-file-alt"></i> Training Logs</h2>
-                <div class="training-logs">
-                    <pre id="log-output"></pre>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tooltips Modal -->
-    <div id="tooltip-modal" class="tooltip-modal">
-        <div class="tooltip-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2 id="modal-title"></h2>
-            <p id="modal-description"></p>
-            <hr>
-            <h3>Example</h3>
-            <pre id="modal-example" class="example-text"></pre>
-            <hr>
-            <h3>Pro Tip</h3>
-            <p id="modal-pro-tip" class="pro-tip-text"></p>
-        </div>
-    </div>
-
-<script src="/static/js/index.js"></script>
-{% endblock %}
+    <!-- Core Scripts -->
+    <script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/training_dashboard.js') }}" defer></script>
+</body>
+</html>

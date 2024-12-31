@@ -1,5 +1,8 @@
-from flask import Flask, request
+# path: ./app.py
+
+from flask import Flask, render_template, request
 from global_state import training_manager, app_logger  # Import global instances
+from gui import DEFAULT_HYPERPARAMETERS, DEFAULT_TRAINING_CONFIG
 from routes.training_routes import create_training_blueprint
 from routes.config_routes import create_config_blueprint
 from routes.tensorboard_routes import create_tensorboard_blueprint
@@ -7,6 +10,7 @@ from routes.dashboard_routes import create_dashboard_blueprint
 from routes.stream_routes import create_stream_blueprint
 import logging
 import requests
+from threading import Timer
 
 app = Flask(__name__)
 logger = app_logger  # Use the global logger
@@ -25,16 +29,33 @@ app.register_blueprint(create_tensorboard_blueprint(training_manager, app_logger
 app.register_blueprint(create_stream_blueprint(training_manager, app_logger), url_prefix="/stream")
 app.register_blueprint(create_dashboard_blueprint(training_manager, app_logger))  # No prefix for the dashboard
 
+@app.route("/", methods=["GET"])
+def index():
+    """
+    Render the main index.html with training_dashboard.html as its default content.
+    """
+    return render_template(
+        "index.html",
+        title="Super Mario RL",
+        year=2024,  # Example year
+    )
+
 def start_tensorboard_via_api():
     """Call the TensorBoard start API when the app launches."""
     try:
-        response = requests.post("http://127.0.0.1:5000/tensorboard/start_tensorboard")
+        logger.info("Attempting to start TensorBoard via API...")
+        response = requests.post("http://127.0.0.1:5000/tensorboard/start")
         if response.status_code == 200:
             logger.info("TensorBoard successfully started via API.")
         else:
             logger.error(f"Failed to start TensorBoard via API. Status code: {response.status_code}, Response: {response.text}")
+    except requests.ConnectionError as e:
+        logger.error(f"Connection error when trying to start TensorBoard: {e}")
     except Exception as e:
-        logger.error(f"Error making API call to start TensorBoard: {e}")
+        logger.error(f"Unexpected error when trying to start TensorBoard: {e}")
+
+Timer(1, start_tensorboard_via_api).start()
+
 
 if __name__ == "__main__":
     logger.info("Starting application and initializing components...")

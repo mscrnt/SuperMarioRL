@@ -24,4 +24,5 @@ su - postgres -c "psql -c \"CREATE DATABASE $POSTGRES_DB OWNER $POSTGRES_USER;\"
 
 # Start Flask application
 cd /app
-exec flask run --host=0.0.0.0 --port=5000
+exec flask run --host=0.0.0.0 --port=5000 
+ 

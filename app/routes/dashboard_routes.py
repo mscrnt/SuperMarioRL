@@ -1,8 +1,8 @@
 # path: routes/dashboard_routes.py
 
 from flask import Blueprint, render_template
-from gui import DEFAULT_HYPERPARAMETERS, DEFAULT_PATHS, DEFAULT_TRAINING_CONFIG
-from utils import load_blueprints
+from gui import DEFAULT_HYPERPARAMETERS, DEFAULT_TRAINING_CONFIG, DEFAULT_PATHS
+from utils import load_blueprints  # Ensure this is correctly defined elsewhere
 import importlib
 import inspect
 
@@ -10,7 +10,7 @@ import inspect
 def create_dashboard_blueprint(training_manager, app_logger):
     """
     Create the dashboard blueprint and integrate the training_manager and logger.
-    
+
     :param training_manager: Global TrainingManager instance to interact with.
     :param app_logger: Global logger instance to be shared across blueprints.
     :return: Dashboard blueprint.
@@ -18,6 +18,7 @@ def create_dashboard_blueprint(training_manager, app_logger):
     # Create a new logger for this blueprint
     logger = app_logger.__class__("dashboard_routes")  # Create a scoped logger
 
+    # Initialize the dashboard blueprint
     dashboard_blueprint = Blueprint("dashboard", __name__)
 
     def dynamic_load_blueprints(module_name):
@@ -40,10 +41,10 @@ def create_dashboard_blueprint(training_manager, app_logger):
     wrapper_blueprints = dynamic_load_blueprints("app_wrappers")
     callback_blueprints = dynamic_load_blueprints("app_callbacks")
 
-    @dashboard_blueprint.route("/")
-    def index():
+    @dashboard_blueprint.route("/dashboard/training", methods=["GET"])
+    def training_dashboard():
         """
-        Render the main dashboard with training progress, settings, wrappers, and callbacks.
+        Render the main training dashboard.
         """
         wrappers = [
             {
@@ -63,9 +64,8 @@ def create_dashboard_blueprint(training_manager, app_logger):
             for bp in callback_blueprints.values()
         ]
 
-        logger.info("Rendering index page")
         return render_template(
-            "index.html",
+            "training_dashboard.html",
             title="Training Dashboard",
             hyperparameters=DEFAULT_HYPERPARAMETERS,
             training_config=DEFAULT_TRAINING_CONFIG,
@@ -73,5 +73,6 @@ def create_dashboard_blueprint(training_manager, app_logger):
             wrappers=wrappers,
             callbacks=callbacks,
         )
+
 
     return dashboard_blueprint
