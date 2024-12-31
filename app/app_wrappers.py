@@ -116,7 +116,7 @@ RewardManagerBlueprint = Blueprint(
 class LoggingStatsWrapper(gym.Wrapper):
     """
     A wrapper to log enhanced statistics to a PostgreSQL database using the DBManager.
-    Tracks steps, episodes, deaths, and aggregates stats for each level.
+    Tracks steps, episodes, actions, and specific events for detailed analysis or replay.
     """
     def __init__(self, env, db_manager=None, env_index=1):
         super(LoggingStatsWrapper, self).__init__(env)
@@ -134,6 +134,7 @@ class LoggingStatsWrapper(gym.Wrapper):
         # Initialize counters and stats
         self.step_count = 0
         self.episode_count = 0
+        self.total_reward = 0
         self.level_stats = {}  # Aggregates stats per level (world, stage)
 
     def reset(self, **kwargs):
@@ -143,8 +144,9 @@ class LoggingStatsWrapper(gym.Wrapper):
         self.episode_count += 1
         self.logger.info(f"Resetting environment for episode {self.episode_count}")
 
-        # Reset step count
+        # Reset counters
         self.step_count = 0
+        self.total_reward = 0
 
         # Reset environment
         obs = self.env.reset(**kwargs)
@@ -154,10 +156,13 @@ class LoggingStatsWrapper(gym.Wrapper):
     def step(self, action):
         """
         Overrides the `step` method to log statistics after every environment step.
-        Tracks steps, episodes, and aggregates stats by level.
+        Tracks steps, episodes, actions, and specific events.
         """
         self.step_count += 1
         obs, reward, done, info = self.env.step(action)
+
+        # Accumulate total reward
+        self.total_reward += reward
 
         # Collect stats from the `info` dictionary
         stats = {
@@ -174,27 +179,46 @@ class LoggingStatsWrapper(gym.Wrapper):
             "flag_get": info.get("flag_get", False),
             "step": self.step_count,
             "episode": self.episode_count,
+            "action": action,  # Track the action taken
+            "reward": reward,
         }
 
-        # Track deaths
-        if done and stats["life"] == 0:
-            level_key = (stats["world"], stats["stage"])
-            if level_key not in self.level_stats:
-                self.level_stats[level_key] = {"deaths": 0, "x_pos_sum": 0, "total_coins": 0}
-            self.level_stats[level_key]["deaths"] += 1
-            self.logger.info(f"Env {self.env_index}: Death recorded on level {level_key} (Episode {self.episode_count}).")
-
-        # Aggregate stats by level
-        level_key = (stats["world"], stats["stage"])
-        if level_key not in self.level_stats:
-            self.level_stats[level_key] = {"deaths": 0, "x_pos_sum": 0, "total_coins": 0}
-        self.level_stats[level_key]["x_pos_sum"] += stats["x_pos"]
-        self.level_stats[level_key]["total_coins"] += stats["coins"]
+        # Track specific events
+        self._track_events(stats, done)
 
         # Log to the database
         self.log_to_db(stats)
 
         return obs, reward, done, info
+
+    def _track_events(self, stats, done):
+        """
+        Tracks specific events like deaths, power-up pickups, and pipe usage.
+        """
+        level_key = (stats["world"], stats["stage"])
+
+        # Initialize level stats if not already
+        if level_key not in self.level_stats:
+            self.level_stats[level_key] = {"deaths": 0, "x_pos_sum": 0, "total_coins": 0, "power_ups": 0, "pipes_used": 0}
+
+        # Death tracking
+        if done and stats["life"] == 0:
+            self.level_stats[level_key]["deaths"] += 1
+            self.logger.info(f"Env {self.env_index}: Death recorded on level {level_key} (Episode {self.episode_count}).")
+
+        # Power-up tracking
+        if stats["player_state"] in ["tall", "fireball"]:
+            self.level_stats[level_key]["power_ups"] += 1
+            self.logger.info(f"Env {self.env_index}: Power-up collected on level {level_key}.")
+
+        # Pipe usage tracking
+        if stats["player_state"] == "pipe":
+            self.level_stats[level_key]["pipes_used"] += 1
+            self.logger.info(f"Env {self.env_index}: Pipe used on level {level_key}.")
+
+        # Aggregate stats
+        self.level_stats[level_key]["x_pos_sum"] += stats["x_pos"]
+        self.level_stats[level_key]["total_coins"] += stats["coins"]
 
     def log_to_db(self, stats):
         """
@@ -213,8 +237,8 @@ class LoggingStatsWrapper(gym.Wrapper):
                          for key, value in stats.items()}
                 cursor.execute("""
                     INSERT INTO mario_env_stats (env_id, world, stage, area, x_position, y_position, score, coins, life,
-                    status, player_state, flag_get, additional_info, step, episode)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    status, player_state, flag_get, additional_info, step, episode, action, reward, total_reward)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     self.env_index,
                     stats.get('world', 0),
@@ -228,25 +252,19 @@ class LoggingStatsWrapper(gym.Wrapper):
                     stats.get('status', 'unknown'),
                     stats.get('player_state', 'unknown'),
                     stats.get('flag_get', False),
-                    Json(stats),  # Store the full stats as JSON
+                    Json(stats),
                     stats.get('step', 0),
                     stats.get('episode', 0),
+                    stats.get('action', None),
+                    stats.get('reward', 0),
+                    self.total_reward,
                 ))
                 conn.commit()
-            self.logger.info("Logged stats to the database successfully.")
         except Exception as e:
             self.logger.error(f"Failed to log stats to the database: {e}")
         finally:
             if conn:
                 self.db_manager.release_connection(conn)
-
-    def get_level_stats(self, world, stage):
-        """
-        Returns aggregated stats for a specific level.
-        """
-        level_key = (world, stage)
-        return self.level_stats.get(level_key, {"deaths": 0, "x_pos_sum": 0, "total_coins": 0})
-
 
 
 LoggingStatsWrapperBlueprint = Blueprint(

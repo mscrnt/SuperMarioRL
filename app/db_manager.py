@@ -47,7 +47,7 @@ class DBManager:
     @classmethod
     def _ensure_table_exists(cls):
         """
-        Ensure the 'mario_env_stats' table exists in the database.
+        Ensure the 'mario_env_stats' table exists in the database and add missing columns.
         """
         create_table_query = sql.SQL("""
         CREATE TABLE IF NOT EXISTS mario_env_stats (
@@ -66,21 +66,60 @@ class DBManager:
             flag_get BOOLEAN DEFAULT FALSE,
             additional_info JSONB,
             step INT DEFAULT 0,
-            episode INT DEFAULT 0
+            episode INT DEFAULT 0,
+            action INT DEFAULT 0,
+            reward FLOAT DEFAULT 0,
+            total_reward FLOAT DEFAULT 0
         );
         """)
         conn = None
         try:
             conn = cls.get_connection()
             with conn.cursor() as cursor:
+                # Ensure the table exists
                 cursor.execute(create_table_query)
                 conn.commit()
+
+                # Ensure additional columns exist
+                cls._ensure_columns_exist(cursor)
+
+            logger.info("Verified or created the 'mario_env_stats' table successfully.")
         except Exception as e:
             logger.error(f"Error ensuring table existence: {e}")
             raise
         finally:
             if conn:
                 cls.release_connection(conn)
+
+    @classmethod
+    def _ensure_columns_exist(cls, cursor):
+        """
+        Ensure additional columns exist in the 'mario_env_stats' table.
+        """
+        required_columns = {
+            "action": "INT DEFAULT 0",
+            "reward": "FLOAT DEFAULT 0",
+            "total_reward": "FLOAT DEFAULT 0",
+        }
+
+        for column, definition in required_columns.items():
+            try:
+                cursor.execute(sql.SQL("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mario_env_stats' AND column_name={}) THEN
+                            ALTER TABLE mario_env_stats ADD COLUMN {} {};
+                        END IF;
+                    END $$;
+                """).format(
+                    sql.Literal(column),
+                    sql.Identifier(column),
+                    sql.SQL(definition)
+                ))
+                logger.info(f"Verified or added column '{column}' in 'mario_env_stats'.")
+            except Exception as e:
+                logger.error(f"Error ensuring column '{column}' exists: {e}")
+                raise
 
     @classmethod
     def get_connection(cls):
