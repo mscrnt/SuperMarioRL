@@ -21,7 +21,6 @@ async function fetchMetricsData() {
  * @param {Object} data Metrics data from the server
  */
 function populateMetricsCharts(data) {
-    // Extract relevant metrics
     const monitorRewards = Object.values(data.env0 || {}).reduce((a, b) => a + b, 0);
     const trainingRewards = Object.values(data.training || {}).reduce((a, b) => a + b, 0);
 
@@ -29,64 +28,55 @@ function populateMetricsCharts(data) {
     updateRewardComparisonMeter(monitorRewards, trainingRewards);
 
     // Update other charts
-    updateLineChart("env0-line-chart", "Monitor Env - Line Chart", data.env0);
-    updateLineChart("training-line-chart", "Training - Line Chart", data.training);
-    updateRewardDistributionChart("env0-reward-chart", "Monitor Env - Reward Distribution", data.rewardDistribution);
-    updateRewardDistributionChart("training-reward-chart", "Training - Reward Distribution", data.rewardDistribution);
+    destroyAndUpdateChart("env0-line-chart", "Monitor Env - Line Chart", data.env0, "line");
+    destroyAndUpdateChart("training-line-chart", "Training - Line Chart", data.training, "line");
+    destroyAndUpdateChart("env0-reward-chart", "Monitor Env - Reward Distribution", data.rewardDistribution, "pie");
+    destroyAndUpdateChart("training-reward-chart", "Training - Reward Distribution", data.rewardDistribution, "pie");
 
     // Update placeholders
-    updatePlaceholderChart("env0-placeholder-chart", "Monitor Env - Placeholder");
-    updatePlaceholderChart("training-placeholder-chart", "Training - Placeholder");
+    destroyAndUpdateChart("env0-placeholder-chart", "Monitor Env - Placeholder", { Placeholder: 1 }, "bar");
+    destroyAndUpdateChart("training-placeholder-chart", "Training - Placeholder", { Placeholder: 1 }, "bar");
 }
 
+/**
+ * Refresh metrics every 10 seconds.
+ */
+function startMetricsRefresh() {
+    fetchMetricsData(); // Fetch immediately on page load
+    setInterval(fetchMetricsData, 10000); // Refresh every 10 seconds
+}
 
 /**
- * Update a line chart with metrics data.
+ * Destroy an existing chart and recreate it with new data.
  * @param {string} chartId ID of the canvas element for the chart
  * @param {string} label Label for the chart
- * @param {Object} metrics Metrics data for the chart
+ * @param {Object} data Data for the chart
+ * @param {string} type Chart type (e.g., "line", "pie", "bar")
  */
-function updateLineChart(chartId, label, metrics) {
+function destroyAndUpdateChart(chartId, label, data, type) {
     const ctx = document.getElementById(chartId).getContext("2d");
-    const labels = Object.keys(metrics).map((key) => `Step ${key}`);
-    const values = Object.values(metrics);
 
-    new Chart(ctx, {
-        type: "line",
+    // Ensure the chart instance is destroyed before creating a new one
+    if (window.charts && window.charts[chartId]) {
+        window.charts[chartId].destroy();
+    } else {
+        if (!window.charts) window.charts = {};
+    }
+
+    const labels = Object.keys(data).map((key) => (type === "line" ? `Step ${key}` : key));
+    const values = Object.values(data);
+
+    window.charts[chartId] = new Chart(ctx, {
+        type,
         data: {
             labels,
             datasets: [
                 {
                     label,
                     data: values,
-                    borderColor: "blue",
-                    borderWidth: 2,
-                },
-            ],
-        },
-    });
-}
-
-/**
- * Update a reward distribution pie chart.
- * @param {string} chartId ID of the canvas element for the chart
- * @param {string} label Label for the chart
- * @param {Object} distribution Reward distribution data
- */
-function updateRewardDistributionChart(chartId, label, distribution) {
-    const ctx = document.getElementById(chartId).getContext("2d");
-    const labels = Object.keys(distribution);
-    const values = Object.values(distribution);
-
-    new Chart(ctx, {
-        type: "pie",
-        data: {
-            labels,
-            datasets: [
-                {
-                    label,
-                    data: values,
-                    backgroundColor: ["gold", "silver", "gray"],
+                    borderColor: type === "line" ? "blue" : undefined,
+                    borderWidth: type === "line" ? 2 : undefined,
+                    backgroundColor: type === "pie" ? ["gold", "silver", "gray"] : undefined,
                 },
             ],
         },
@@ -102,34 +92,11 @@ function updateRewardComparisonMeter(monitorReward, trainingReward) {
     const totalReward = monitorReward + trainingReward;
     const monitorPercentage = (monitorReward / totalReward) * 100;
 
-    // Update the position of the tick
     const tick = document.getElementById("reward-meter-tick");
     if (tick) {
         tick.style.left = `${monitorPercentage}%`;
         console.log(`Meter Updated: Monitor (${monitorReward}) vs Training (${trainingReward})`);
     }
-}
-
-/**
- * Update a placeholder chart.
- * @param {string} chartId ID of the canvas element for the chart
- * @param {string} label Label for the placeholder
- */
-function updatePlaceholderChart(chartId, label) {
-    const ctx = document.getElementById(chartId).getContext("2d");
-    new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels: ["Placeholder"],
-            datasets: [
-                {
-                    label,
-                    data: [1],
-                    backgroundColor: ["gray"],
-                },
-            ],
-        },
-    });
 }
 
 /**
@@ -173,7 +140,7 @@ function initializeVideoFeed() {
  */
 function initializeListenersForMetricsDashboard() {
     initializeVideoFeed();
-    fetchMetricsData();
+    startMetricsRefresh(); // Start the periodic refresh
     console.log("Listeners for Metrics Dashboard initialized.");
 }
 
