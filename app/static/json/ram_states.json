@@ -238,7 +238,36 @@
             "0x15": "Bowser's Flame",
             "0x16": "Fireworks",
             "0x17": "BulletBill Frenzy",
-            "0x18": "Stop Frenzy"
+            "0x18": "Stop Frenzy",
+            "0x1B": "Firebar",
+            "0x1C": "Firebar",
+            "0x1D": "Firebar",
+            "0x1E": "Firebar",
+            "0x1F": "Long Firebar (castle)",
+            "0x24": "Static lift",
+            "0x25": "Static lift",
+            "0x26": "Vertical going lift",
+            "0x27": "Vertical going lift",
+            "0x28": "Horizontal going lift",
+            "0x29": "Static lift (Will Fall if Player stays on it for too long)",
+            "0x2A": "Horizontal forward moving lift with strange hitbox",
+            "0x2B": "Halves of double lift (like 1.2)",
+            "0x2C": "Halves of double lift (like 1.2)",
+            "0x2D": "Bowser (special)",
+            "0x2E": "PowerUp Object",
+            "0x2F": "Vine Object",
+            "0x30": "Flagpole Flag Object",
+            "0x31": "StarFlag Object",
+            "0x32": "Jump spring Object",
+            "0x33": "BulletBill CannonVar",
+            "0x34": "Warpzone",
+            "0x35": "Retainer Object",
+            "0x36": "Crash",
+            "0x37": "2 Little Goomba",
+            "0x38": "3 Little Goomba",
+            "0x3A": "Skewed Goomba",
+            "0x3B": "2 Koopa Troopa",
+            "0x3C": "3 Koopa Troopa"
         }
     },
     "0x001E": {
@@ -323,5 +352,78 @@
     "0x0783": {
         "category": "Timers",
         "description": "Running Timer."
+    },
+    "0x0023": {
+        "category": "Power-ups",
+        "description": "Power-up state/heading (various states for power-up behavior and movement)",
+        "values": {
+            "0x02-0x06": "'Question block' hit sequence",
+            "0x07-0x11": "Power-up emerging sequence",
+            "0xC0": "Shroom airborne going right",
+            "0xC2": "Shroom airborne going left",
+            "0x80": "Power-up moving right or stationary",
+            "0x82": "Power-up moving left"
+        }
+    },
+    "0x0046-0x004B": {
+        "category": "Enemies",
+        "description": "Enemy heading direction",
+        "values": {
+            "1": "Right",
+            "2": "Left"
+        }
+    },
+    "0x0045": {
+        "category": "Player",
+        "description": "Player moving direction",
+        "values": {
+            "1": "Right",
+            "2": "Left"
+        }
+    },
+    "0x004B": {
+        "category": "Power-ups",
+        "description": "Shroom heading direction",
+        "values": {
+            "1": "Right",
+            "2": "Left"
+        }
+    },
+    "0x0057": {
+        "category": "Player",
+        "description": "Player horizontal speed",
+        "values": {
+            "0xD8<0": "Moving left",
+            "0x00": "Not moving",
+            "0<0x28": "Moving right"
+        }
+    },
+    "0x0058-0x005D": {
+        "category": "Enemies",
+        "description": "Enemy horizontal speed",
+        "values": {
+            "0xD8<0": "Moving left",
+            "0x00": "Not moving",
+            "0<0x28": "Moving right"
+        }
+    },
+    "0x006D": {
+        "category": "Player",
+        "description": "Player horizontal position in level"
+    },
+    "0x006E-0x0072": {
+        "category": "Enemies",
+        "description": "Enemy horizontal position in level"
+    },
+    "0x0773": {
+        "category": "Environment",
+        "description": "Level palette",
+        "values": {
+            "0x00": "Normal",
+            "0x01": "Underwater",
+            "0x02": "Night",
+            "0x03": "Underground",
+            "0x04": "Castle"
+        }
     }
 }

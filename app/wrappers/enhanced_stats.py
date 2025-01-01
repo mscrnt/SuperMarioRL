@@ -87,11 +87,8 @@ class EnhancedStatsWrapper(gym.Wrapper):
         """
         life_address = int("0x075A", 16)  # Use the key itself as the address
         try:
-            life = self._get_ram_value(life_address)
-            self.logger.debug(f"[RAM] Current life: {life}")
-            return life
-        except Exception as e:
-            self.logger.error(f"Failed to retrieve life: {e}")
+            return self._get_ram_value(life_address)
+        except Exception:
             return 3  # Default life count
 
     def _read_enemy_kills(self):
@@ -104,11 +101,8 @@ class EnhancedStatsWrapper(gym.Wrapper):
                 enemy_state_addresses.extend(self._parse_address_range(addr))
         try:
             enemy_states = [self._get_ram_value(address) for address in enemy_state_addresses]
-            kills = sum(state in [0x04, 0x20, 0x22, 0x23] for state in enemy_states)
-            self.logger.debug(f"Enemy states: {enemy_states}, Kills this step: {kills}")
-            return kills
-        except Exception as e:
-            self.logger.error(f"Failed to retrieve enemy states: {e}")
+            return sum(state in [0x04, 0x20, 0x22, 0x23] for state in enemy_states)
+        except Exception:
             return 0  # Default no kills
 
     def _track_deaths(self):
@@ -118,23 +112,33 @@ class EnhancedStatsWrapper(gym.Wrapper):
         current_life = self._get_life()
         if current_life < self.previous_life:
             self.total_deaths += 1
-            self.logger.info(f"Death detected. Total deaths: {self.total_deaths}")
         self.previous_life = current_life
+
+    def _get_mapped_states(self):
+        """
+        Extract all RAM states from the mapping and return a dictionary.
+        """
+        states = {}
+        for addr, data in self.ram_mapping.items():
+            addresses = self._parse_address_range(addr)
+            for address in addresses:
+                ram_value = self._get_ram_value(address)
+                key = f"{addr}_{hex(address)}"
+                states[key] = ram_value
+        return states
 
     def step(self, action):
         """
-        Override the step method to track and log statistics.
+        Override the step method to track and add all mapped states to stats.
         """
         obs, reward, done, info = self.env.step(action)
 
         # Track kills and deaths
         kills_this_step = self._read_enemy_kills()
         self.total_enemy_kills += kills_this_step
-        # self.logger.info(f"Kills this step: {kills_this_step}, Total kills: {self.total_enemy_kills}")
-
         self._track_deaths()
 
-        # Collect statistics
+        # Collect core statistics
         stats = {
             "coins": info.get("coins", self._get_ram_value(int("0x075E", 16))),
             "score": info.get("score", self._get_ram_value(int("0x0117", 16))),  # Adjusted to valid address
@@ -147,10 +151,14 @@ class EnhancedStatsWrapper(gym.Wrapper):
             "stage": info.get("stage", self._get_ram_value(int("0x0760", 16)) + 1),
         }
 
+        # Add all mapped RAM states
+        stats.update(self._get_mapped_states())
+
         # Log statistics when the episode ends
         if done:
-            readable_stats = ", ".join([f"{key}: {value}" for key, value in stats.items()])
-            self.logger.info(f"Env {self.env_index} stats: {readable_stats}")
+            self.logger.info("Episode completed. Final stats:")
+            for key, value in stats.items():
+                self.logger.info(f"  {key}: {value}")
 
         # Ensure stats fit the observation space
         stats_values = list(stats.values())[:15]
@@ -161,6 +169,7 @@ class EnhancedStatsWrapper(gym.Wrapper):
         info["stats"] = stats
         return processed_obs, reward, done, info
 
+
     def reset(self, **kwargs):
         """
         Reset the environment and statistics.
@@ -169,5 +178,4 @@ class EnhancedStatsWrapper(gym.Wrapper):
         self.total_enemy_kills = 0
         self.total_deaths = 0
         self.previous_life = self._get_life()
-        self.logger.info("Environment reset. Stats counters reset.")
         return {"frame": obs, "stats": np.zeros(15, dtype=np.float32)}

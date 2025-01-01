@@ -1,5 +1,3 @@
-# path: ./db_manager.py
-
 from psycopg2.pool import SimpleConnectionPool
 from psycopg2 import sql, OperationalError
 from gui import DB_CONFIG
@@ -48,35 +46,24 @@ class DBManager:
     @classmethod
     def _ensure_table_exists(cls):
         """
-        Ensure the 'mario_env_stats' table exists in the database and add missing columns.
+        Ensure the 'mario_env_stats' table exists in the database.
         """
         create_table_query = sql.SQL("""
         CREATE TABLE IF NOT EXISTS mario_env_stats (
             id SERIAL PRIMARY KEY,
             env_id INT NOT NULL,
-            world INT NOT NULL,
-            stage INT NOT NULL,
-            area INT DEFAULT 0,
-            x_position INT NOT NULL,
-            y_position INT NOT NULL,
-            score INT NOT NULL,
-            coins INT NOT NULL,
-            life INT DEFAULT 0,
-            status VARCHAR(50) NOT NULL,
-            player_state VARCHAR(50) NOT NULL,
-            flag_get BOOLEAN DEFAULT FALSE,
-            enemy_kills INT DEFAULT 0,
-            deaths INT DEFAULT 0,
-            powerup_drawn INT DEFAULT 0,
-            powerup_type INT DEFAULT -1,
-            horizontal_velocity FLOAT DEFAULT 0,
-            vertical_velocity FLOAT DEFAULT 0,
-            fireball_count INT DEFAULT 0,
-            step INT DEFAULT 0,
             episode INT DEFAULT 0,
+            step INT DEFAULT 0,
             action INT DEFAULT 0,
             reward FLOAT DEFAULT 0,
             total_reward FLOAT DEFAULT 0,
+            world INT DEFAULT 0,
+            stage INT DEFAULT 0,
+            x_pos INT DEFAULT 0,
+            y_pos INT DEFAULT 0,
+            score INT DEFAULT 0,
+            coins INT DEFAULT 0,
+            life INT DEFAULT 0,
             additional_info JSONB
         );
         """)
@@ -87,10 +74,6 @@ class DBManager:
                 # Ensure the table exists
                 cursor.execute(create_table_query)
                 conn.commit()
-
-                # Ensure additional columns exist
-                cls._ensure_columns_exist(cursor)
-
             logger.info("Verified or created the 'mario_env_stats' table successfully.")
         except Exception as e:
             logger.error(f"Error ensuring table existence: {e}")
@@ -98,44 +81,6 @@ class DBManager:
         finally:
             if conn:
                 cls.release_connection(conn)
-
-    @classmethod
-    def _ensure_columns_exist(cls, cursor):
-        """
-        Ensure additional columns exist in the 'mario_env_stats' table.
-        """
-        required_columns = {
-            "enemy_kills": "INT DEFAULT 0",
-            "deaths": "INT DEFAULT 0",
-            "powerup_drawn": "INT DEFAULT 0",
-            "powerup_type": "INT DEFAULT -1",
-            "horizontal_velocity": "FLOAT DEFAULT 0",
-            "vertical_velocity": "FLOAT DEFAULT 0",
-            "fireball_count": "INT DEFAULT 0",
-            "action": "INT DEFAULT 0",
-            "reward": "FLOAT DEFAULT 0",
-            "total_reward": "FLOAT DEFAULT 0",
-        }
-
-        for column, definition in required_columns.items():
-            try:
-                cursor.execute(sql.SQL("""
-                    DO $$
-                    BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                                       WHERE table_name='mario_env_stats' AND column_name={}) THEN
-                            ALTER TABLE mario_env_stats ADD COLUMN {} {};
-                        END IF;
-                    END $$;
-                """).format(
-                    sql.Literal(column),
-                    sql.Identifier(column),
-                    sql.SQL(definition)
-                ))
-                logger.info(f"Verified or added column '{column}' in 'mario_env_stats'.")
-            except Exception as e:
-                logger.error(f"Error ensuring column '{column}' exists: {e}")
-                raise
 
     @classmethod
     def get_connection(cls):
