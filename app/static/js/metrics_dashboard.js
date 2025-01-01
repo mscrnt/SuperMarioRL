@@ -13,6 +13,9 @@ async function fetchMetricsData() {
         console.log("Metrics data fetched and charts updated.");
     } catch (error) {
         console.error("Error fetching metrics data:", error);
+
+        // Use placeholder values if fetching metrics data fails
+        populateMetricsCharts({}); // Pass an empty object
     }
 }
 
@@ -21,21 +24,27 @@ async function fetchMetricsData() {
  * @param {Object} data Metrics data from the server
  */
 function populateMetricsCharts(data) {
-    const monitorRewards = Object.values(data.env0 || {}).reduce((a, b) => a + b, 0);
-    const trainingRewards = Object.values(data.training || {}).reduce((a, b) => a + b, 0);
+    // Calculate Kill/Death Ratios
+    const monitorKills = data.env0Stats?.enemy_kills || 0;
+    const monitorDeaths = data.env0Stats?.deaths || 1; // Avoid division by zero
+    const monitorKD = (monitorKills / monitorDeaths).toFixed(2) || "6.9";
+
+    const trainingKills = data.trainingStats?.enemy_kills || 0;
+    const trainingDeaths = data.trainingStats?.deaths || 1; // Avoid division by zero
+    const trainingKD = (trainingKills / trainingDeaths).toFixed(2) || "6.9";
+
+    // Display K/D Ratios
+    updateKDDisplay("env0-kd-display", "Monitor K/D", monitorKD);
+    updateKDDisplay("training-kd-display", "Training K/D", trainingKD);
 
     // Update the Reward Comparison Meter
+    const monitorRewards = Object.values(data.env0 || {}).reduce((a, b) => a + b, 0);
+    const trainingRewards = Object.values(data.training || {}).reduce((a, b) => a + b, 0);
     updateRewardComparisonMeter(monitorRewards, trainingRewards);
 
     // Update other charts
-    destroyAndUpdateChart("env0-line-chart", "Monitor Env - Line Chart", data.env0, "line");
-    destroyAndUpdateChart("training-line-chart", "Training - Line Chart", data.training, "line");
-    destroyAndUpdateChart("env0-reward-chart", "Monitor Env - Reward Distribution", data.rewardDistribution, "pie");
-    destroyAndUpdateChart("training-reward-chart", "Training - Reward Distribution", data.rewardDistribution, "pie");
-
-    // Update placeholders
-    destroyAndUpdateChart("env0-placeholder-chart", "Monitor Env - Placeholder", { Placeholder: 1 }, "bar");
-    destroyAndUpdateChart("training-placeholder-chart", "Training - Placeholder", { Placeholder: 1 }, "bar");
+    destroyAndUpdateChart("env0-reward-chart", "Monitor Env - Reward Distribution", data.rewardDistribution || {}, "pie");
+    destroyAndUpdateChart("training-reward-chart", "Training - Reward Distribution", data.rewardDistribution || {}, "pie");
 }
 
 /**
@@ -47,6 +56,20 @@ function startMetricsRefresh() {
 }
 
 /**
+ * Display K/D Ratio as a float.
+ * @param {string} elementId ID of the element where the K/D should be displayed
+ * @param {string} label Label for the display
+ * @param {string} kdRatio The calculated K/D ratio
+ */
+function updateKDDisplay(elementId, label, kdRatio) {
+    const container = document.getElementById(elementId);
+    if (container) {
+        container.innerHTML = `<h2>${label}</h2><p>${kdRatio}</p>`;
+        console.log(`Updated ${label} to ${kdRatio}`);
+    }
+}
+
+/**
  * Destroy an existing chart and recreate it with new data.
  * @param {string} chartId ID of the canvas element for the chart
  * @param {string} label Label for the chart
@@ -54,9 +77,9 @@ function startMetricsRefresh() {
  * @param {string} type Chart type (e.g., "line", "pie", "bar")
  */
 function destroyAndUpdateChart(chartId, label, data, type) {
-    const ctx = document.getElementById(chartId).getContext("2d");
+    const ctx = document.getElementById(chartId)?.getContext("2d");
+    if (!ctx) return;
 
-    // Ensure the chart instance is destroyed before creating a new one
     if (window.charts && window.charts[chartId]) {
         window.charts[chartId].destroy();
     } else {
@@ -90,7 +113,7 @@ function destroyAndUpdateChart(chartId, label, data, type) {
  */
 function updateRewardComparisonMeter(monitorReward, trainingReward) {
     const totalReward = monitorReward + trainingReward;
-    const monitorPercentage = (monitorReward / totalReward) * 100;
+    const monitorPercentage = totalReward > 0 ? (monitorReward / totalReward) * 100 : 50; // Default to 50%
 
     const tick = document.getElementById("reward-meter-tick");
     if (tick) {
@@ -111,7 +134,6 @@ function initializeVideoFeed() {
         return;
     }
 
-    // Ensure placeholder is visible by default
     videoPlaceholder.style.display = "block";
     videoFeed.style.display = "none";
 
@@ -124,11 +146,11 @@ function initializeVideoFeed() {
                 videoPlaceholder.style.display = "none";
                 videoFeed.style.display = "block";
             } else {
-                setTimeout(checkRenderStatus, 1000); // Retry every second
+                setTimeout(checkRenderStatus, 1000);
             }
         } catch (error) {
             console.error("Error checking render status:", error);
-            setTimeout(checkRenderStatus, 1000); // Retry in case of error
+            setTimeout(checkRenderStatus, 1000);
         }
     };
 
@@ -140,7 +162,7 @@ function initializeVideoFeed() {
  */
 function initializeListenersForMetricsDashboard() {
     initializeVideoFeed();
-    startMetricsRefresh(); // Start the periodic refresh
+    startMetricsRefresh();
     console.log("Listeners for Metrics Dashboard initialized.");
 }
 

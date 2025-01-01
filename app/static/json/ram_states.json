@@ -1,0 +1,327 @@
+{
+    "0x0000": {
+        "category": "Player",
+        "description": "Temp/various uses. Is used in vertical physics for gravity acceleration (value copied from 0x0709)."
+    },
+    "0x0001": {
+        "category": "Player",
+        "description": "Player's animation"
+    },
+    "0x0002": {
+        "category": "Player",
+        "description": "Temp/various. Something to do with player y (but it skips to 0 every x frames, even when you don't move)."
+    },
+    "0x0003": {
+        "category": "Player",
+        "description": "Player's direction (and others)",
+        "values": {
+            "1": "Right",
+            "2": "Left"
+        }
+    },
+    "0x0004": {
+        "category": "Player",
+        "description": "How much to load"
+    },
+    "0x0005": {
+        "category": "Player",
+        "description": "Something to do with player x (same as 0x0002)"
+    },
+    "0x0008": {
+        "category": "Player",
+        "description": "Object Offset."
+    },
+    "0x0009": {
+        "category": "Player",
+        "description": "Frame Counter. Count number of Frames."
+    },
+    "0x000A": {
+        "category": "Player",
+        "description": "Button state AB (flags)",
+        "values": {
+            "0x00": "No Button",
+            "0x40": "A",
+            "0x80": "B",
+            "0xC0": "Both"
+        }
+    },
+    "0x000B": {
+        "category": "Player",
+        "description": "Vertical direction input state (flags)",
+        "values": {
+            "0x00": "No Button",
+            "0x40": "Down",
+            "0x80": "Up",
+            "0xC0": "Both"
+        }
+    },
+    "0x000E": {
+        "category": "Player",
+        "description": "Player's state",
+        "values": {
+            "0x00": "Leftmost of screen",
+            "0x01": "Climbing vine",
+            "0x02": "Entering reversed-L pipe",
+            "0x03": "Going down a pipe",
+            "0x04": "Autowalk",
+            "0x05": "Autowalk",
+            "0x06": "Player dies",
+            "0x07": "Entering area",
+            "0x08": "Normal",
+            "0x09": "Transforming from Small to Large (cannot move)",
+            "0x0A": "Transforming from Large to Small (cannot move)",
+            "0x0B": "Dying",
+            "0x0C": "Transforming to Fire Mario (cannot move)"
+        }
+    },
+    "0x0754": {
+        "category": "Player",
+        "description": "Player's state (big/small)",
+        "values": {
+            "0": "Big",
+            "1": "Small",
+            "2": "Can't hit blocks but can stand on them",
+            "5": "Small fiery state"
+        }
+    },
+    "0x071C": {
+        "category": "Player",
+        "description": "ScreenEdge X-Position, loads next screen when player passes it."
+    },
+    "0x071D": {
+        "category": "Player",
+        "description": "Player x position, moves screen position forward when this moves."
+    },
+    "0x0700": {
+        "category": "Player",
+        "description": "Player X-Speed Absolute, speed in either direction (0 - 0x28)."
+    },
+    "0x0705": {
+        "category": "Player",
+        "description": "Player X-MoveForce, runs when you press left or right."
+    },
+    "0x0709": {
+        "category": "Player",
+        "description": "Current gravity applied to player sprite.",
+        "values": {
+            "0x30": "In a jump when still or walking slowly",
+            "0x2D": "In a jump when walking at full speed",
+            "0x38": "In a jump when running at full speed"
+        }
+    },
+    "0x070A": {
+        "category": "Player",
+        "description": "Current fall gravity. Copied to 0x0709 if falling.",
+        "values": {
+            "0xA8": "Falling when still or walking slowly",
+            "0x90": "Falling when walking at full speed",
+            "0xD0": "Falling when running at full speed"
+        }
+    },
+    "0x070B": {
+        "category": "Player",
+        "description": "Runs big-small animation (does not affect anything internally)."
+    },
+    "0x070C": {
+        "category": "Player",
+        "description": "Player walk animation delay, in game frames (1/60 s)."
+    },
+    "0x070D": {
+        "category": "Player",
+        "description": "Player walk animation current frame index (0,1,2,0,etc)."
+    },
+    "0x075A": {
+        "category": "Player",
+        "description": "Lives"
+    },
+    "0x075E": {
+        "category": "Player",
+        "description": "Coins"
+    },
+    "0x075F": {
+        "category": "Player",
+        "description": "World"
+    },
+    "0x0760": {
+        "category": "Player",
+        "description": "Level"
+    },
+    "0x071A": {
+        "category": "Player",
+        "description": "Current screen (in level)"
+    },
+    "0x071B": {
+        "category": "Player",
+        "description": "Next screen (in level)"
+    },
+    "0x0704": {
+        "category": "Player",
+        "description": "Swimming Flag. Set to 0 to swim."
+    },
+    "0x0712": {
+        "category": "Player",
+        "description": "Is DeathMusicLoaded? (boolean). Usually triggered for falling deaths."
+    },
+    "0x0714": {
+        "category": "Player",
+        "description": "Value is 0x04 when ducking as big Mario; otherwise 0. Retains value if sliding off an edge."
+    },
+    "0x06FC": {
+        "category": "Player",
+        "description": "Player 1 input (regular flag pattern). Select and start reset after 1 frame."
+    },
+    "0x06D5": {
+        "category": "Player",
+        "description": "PlayerGfx_Offset. Player sprite Mario state.",
+        "values": {
+            "0xB8": "Small stand",
+            "[0x60, 0x70, 0x80]": "Small walk cycle",
+            "0xC8": "Big stand",
+            "0x20": "Big jump",
+            "[0x00, 0x10, 0x20]": "Big walk cycle",
+            "0x50": "Crouch"
+        }
+    },
+    "0x0433": {
+        "category": "Player",
+        "description": "Player vertical fractional velocity. Not considered in clamping to max fall velocity."
+    },
+    "0x0450": {
+        "category": "Player",
+        "description": "Player max velocity to the left."
+    },
+    "0x0456": {
+        "category": "Player",
+        "description": "Player max velocity to the right."
+    },
+    "0x0490": {
+        "category": "Player",
+        "description": "Player Collision_Bits. Changes to 0xFE if collided with any block or object."
+    },
+    "0x03C4": {
+        "category": "Player",
+        "description": "Player palette. Cycles when you have a star. Set to 0x20 to walk behind scenery."
+    },
+    "0x000F-0x0013": {
+        "category": "Enemies",
+        "description": "Enemy drawn? Max 5 enemies at once",
+        "values": {
+            "0": "No",
+            "1": "Yes (not so much drawn as 'active' or something)"
+        }
+    },
+    "0x0016-0x001B": {
+        "category": "Enemies",
+        "description": "Enemy type identifier buffer for multiple objects in this range",
+        "values": {
+            "0x00": "Green Koopa",
+            "0x01": "Red Koopa",
+            "0x02": "Buzzy beetle",
+            "0x03": "Red Koopa",
+            "0x04": "Green Koopa",
+            "0x05": "Hammer brother",
+            "0x06": "Goomba",
+            "0x07": "Blooper",
+            "0x08": "BulletBill FrenzyVar",
+            "0x09": "Green Koopa paratroopa",
+            "0x0A": "Grey CheepCheep",
+            "0x0B": "Red CheepCheep",
+            "0x0C": "Pobodoo",
+            "0x0D": "Piranha Plant",
+            "0x0E": "Green Paratroopa Jump",
+            "0x0F": "Crashes game (status bar margin)",
+            "0x10": "Bowser's flame",
+            "0x11": "Lakitu",
+            "0x12": "Spiny Egg",
+            "0x13": "Nothing",
+            "0x14": "Fly CheepCheep",
+            "0x15": "Bowser's Flame",
+            "0x16": "Fireworks",
+            "0x17": "BulletBill Frenzy",
+            "0x18": "Stop Frenzy"
+        }
+    },
+    "0x001E": {
+        "category": "Enemies",
+        "description": "Enemy state",
+        "values": {
+            "0x00": "Does not mean they don't exist",
+            "0x01": "Falling_enemy or Bullet_Bill drawn (not killed yet).",
+            "0x04": "Enemy Stomped",
+            "0x20": "BulletBill / CheepCheep / hammer_bro stomped",
+            "0x22": "Killed with fire or star",
+            "0x23": "Bowser killed",
+            "0xC4": "Koopa stomped falling",
+            "0x84": "Koopa or buzzyBeetle Stomped and moving",
+            "0xFF": "Will kill them off (like getting hit by a star)"
+        }
+    },
+    "0x03AE": {
+        "category": "Enemies",
+        "description": "Enemy x pos within current screen offset."
+    },
+    "0x0417": {
+        "category": "Enemies",
+        "description": "Enemy YMF_Dummy"
+    },
+    "0x00A0": {
+        "category": "Enemies",
+        "description": "Enemy vertical velocity."
+    },
+    "0x006E": {
+        "category": "Enemies",
+        "description": "Enemy horizontal position in level."
+    },
+    "0x0087": {
+        "category": "Enemies",
+        "description": "Enemy x position on screen."
+    },
+    "0x0014": {
+        "category": "Power-ups",
+        "description": "Powerup drawn",
+        "values": {
+            "0": "No",
+            "1": "Yes"
+        }
+    },
+    "0x001D": {
+        "category": "Power-ups",
+        "description": "Player float state",
+        "values": {
+            "0x00": "Standing on solid/else",
+            "0x01": "Airborn by jumping",
+            "0x02": "Airborn by walking off a ledge",
+            "0x03": "Sliding down flagpole"
+        }
+    },
+    "0x0039": {
+        "category": "Power-ups",
+        "description": "Powerup type (when on screen)",
+        "values": {
+            "0": "Mushroom",
+            "1": "Flower",
+            "2": "Star",
+            "3": "1up"
+        }
+    },
+    "0x00BB": {
+        "category": "Power-ups",
+        "description": "Powerup vertical screen position."
+    },
+    "0x00C4": {
+        "category": "Power-ups",
+        "description": "Powerup hitbox (1x4 bytes, <<x1,y1> <x2,y2>>)."
+    },
+    "0x03BE": {
+        "category": "Power-ups",
+        "description": "Powerup y pos within current screen offset."
+    },
+    "0x0747": {
+        "category": "Timers",
+        "description": "Timer Control."
+    },
+    "0x0783": {
+        "category": "Timers",
+        "description": "Running Timer."
+    }
+}

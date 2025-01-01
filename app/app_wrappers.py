@@ -4,58 +4,7 @@ import gym
 import numpy as np
 from log_manager import LogManager
 from utils import load_blueprints as Blueprint
-from psycopg2.extras import Json
-
-
-
-
-class EnhancedStatsWrapper(gym.Wrapper):
-    """
-    A wrapper to enhance environment observations with additional statistics.
-    """
-
-    def __init__(self, env, env_index=1):
-        super(EnhancedStatsWrapper, self).__init__(env)
-        self.env_index = env_index
-        self.logger = LogManager(f"EnhancedStatsWrapper_env_{env_index}")
-        self.logger.info("Initializing EnhancedStatsWrapper", env_index=env_index)
-
-        # Extend observation space to include custom statistics
-        stats_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(9,), dtype=np.float32)
-        self.observation_space = gym.spaces.Dict({
-            "frame": env.observation_space,
-            "stats": stats_space
-        })
-
-    def step(self, action):
-        obs, reward, done, info = self.env.step(action)
-
-        # Collect statistics from the environment
-        stats = {
-            "coins": info.get("coins", getattr(self.env.unwrapped, "_coins", 0)),
-            "score": info.get("score", getattr(self.env.unwrapped, "_score", 0)),
-            "x_pos": info.get("x_pos", getattr(self.env.unwrapped, "_x_position", 0)),
-            "player_state": info.get("player_state", getattr(self.env.unwrapped, "_player_state", 0)),
-            "time": info.get("time", getattr(self.env.unwrapped, "_time", 0)),
-            "flag_get": bool(info.get("flag_get", getattr(self.env.unwrapped, "_flag_get", 0))),
-            "world": info.get("world", getattr(self.env.unwrapped, "_world", 0)),
-            "stage": info.get("stage", getattr(self.env.unwrapped, "_stage", 0)),
-            "status": {"small": 0, "tall": 1, "fireball": 2}.get(info.get("status", "small"), 0),
-        }
-
-        if done:
-            readable_stats = ", ".join([f"{key}: {value}" for key, value in stats.items()])
-            self.logger.info(f"Env {self.env_index} stats: {readable_stats}")
-
-        processed_obs = {"frame": obs, "stats": np.array(list(stats.values()), dtype=np.float32)}
-        info["stats"] = stats
-        return processed_obs, reward, done, info
-
-    def reset(self, **kwargs):
-        obs = self.env.reset(**kwargs)
-        return {"frame": obs, "stats": np.zeros(9, dtype=np.float32)}
-
-
+from wrappers.enhanced_stats import EnhancedStatsWrapper
 
 EnhancedStatsWrapperBlueprint = Blueprint(
     component_class=EnhancedStatsWrapper,
@@ -177,10 +126,18 @@ class LoggingStatsWrapper(gym.Wrapper):
             "status": info.get("status", "unknown"),
             "player_state": info.get("player_state", "unknown"),
             "flag_get": info.get("flag_get", False),
+            "enemy_kills": info.get("enemy_kills", 0),
+            "deaths": info.get("deaths", 0),
+            "powerup_drawn": info.get("powerup_drawn", 0),
+            "powerup_type": info.get("powerup_type", -1),
+            "horizontal_velocity": info.get("horizontal_velocity", 0),
+            "vertical_velocity": info.get("vertical_velocity", 0),
+            "fireball_count": info.get("fireball_count", 0),
             "step": self.step_count,
             "episode": self.episode_count,
             "action": action,  # Track the action taken
             "reward": reward,
+            "total_reward": self.total_reward,
         }
 
         # Track specific events
@@ -199,7 +156,13 @@ class LoggingStatsWrapper(gym.Wrapper):
 
         # Initialize level stats if not already
         if level_key not in self.level_stats:
-            self.level_stats[level_key] = {"deaths": 0, "x_pos_sum": 0, "total_coins": 0, "power_ups": 0, "pipes_used": 0}
+            self.level_stats[level_key] = {
+                "deaths": 0,
+                "x_pos_sum": 0,
+                "total_coins": 0,
+                "power_ups": 0,
+                "pipes_used": 0,
+            }
 
         # Death tracking
         if done and stats["life"] == 0:
@@ -237,8 +200,9 @@ class LoggingStatsWrapper(gym.Wrapper):
                          for key, value in stats.items()}
                 cursor.execute("""
                     INSERT INTO mario_env_stats (env_id, world, stage, area, x_position, y_position, score, coins, life,
-                    status, player_state, flag_get, additional_info, step, episode, action, reward, total_reward)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    status, player_state, flag_get, enemy_kills, deaths, powerup_drawn, powerup_type, 
+                    horizontal_velocity, vertical_velocity, fireball_count, step, episode, action, reward, total_reward)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     self.env_index,
                     stats.get('world', 0),
@@ -252,12 +216,18 @@ class LoggingStatsWrapper(gym.Wrapper):
                     stats.get('status', 'unknown'),
                     stats.get('player_state', 'unknown'),
                     stats.get('flag_get', False),
-                    Json(stats),
+                    stats.get('enemy_kills', 0),
+                    stats.get('deaths', 0),
+                    stats.get('powerup_drawn', 0),
+                    stats.get('powerup_type', -1),
+                    stats.get('horizontal_velocity', 0),
+                    stats.get('vertical_velocity', 0),
+                    stats.get('fireball_count', 0),
                     stats.get('step', 0),
                     stats.get('episode', 0),
                     stats.get('action', None),
                     stats.get('reward', 0),
-                    self.total_reward,
+                    stats.get('total_reward', 0),
                 ))
                 conn.commit()
         except Exception as e:
@@ -265,6 +235,7 @@ class LoggingStatsWrapper(gym.Wrapper):
         finally:
             if conn:
                 self.db_manager.release_connection(conn)
+
 
 
 LoggingStatsWrapperBlueprint = Blueprint(

@@ -8,6 +8,7 @@ from threading import Lock
 
 logger = LogManager("DBManager")
 
+
 class DBManager:
     """Manages a thread-safe database connection pool and ensures the required table exists."""
     _db_pool = None
@@ -64,12 +65,19 @@ class DBManager:
             status VARCHAR(50) NOT NULL,
             player_state VARCHAR(50) NOT NULL,
             flag_get BOOLEAN DEFAULT FALSE,
-            additional_info JSONB,
+            enemy_kills INT DEFAULT 0,
+            deaths INT DEFAULT 0,
+            powerup_drawn INT DEFAULT 0,
+            powerup_type INT DEFAULT -1,
+            horizontal_velocity FLOAT DEFAULT 0,
+            vertical_velocity FLOAT DEFAULT 0,
+            fireball_count INT DEFAULT 0,
             step INT DEFAULT 0,
             episode INT DEFAULT 0,
             action INT DEFAULT 0,
             reward FLOAT DEFAULT 0,
-            total_reward FLOAT DEFAULT 0
+            total_reward FLOAT DEFAULT 0,
+            additional_info JSONB
         );
         """)
         conn = None
@@ -97,6 +105,13 @@ class DBManager:
         Ensure additional columns exist in the 'mario_env_stats' table.
         """
         required_columns = {
+            "enemy_kills": "INT DEFAULT 0",
+            "deaths": "INT DEFAULT 0",
+            "powerup_drawn": "INT DEFAULT 0",
+            "powerup_type": "INT DEFAULT -1",
+            "horizontal_velocity": "FLOAT DEFAULT 0",
+            "vertical_velocity": "FLOAT DEFAULT 0",
+            "fireball_count": "INT DEFAULT 0",
             "action": "INT DEFAULT 0",
             "reward": "FLOAT DEFAULT 0",
             "total_reward": "FLOAT DEFAULT 0",
@@ -107,7 +122,8 @@ class DBManager:
                 cursor.execute(sql.SQL("""
                     DO $$
                     BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mario_env_stats' AND column_name={}) THEN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                       WHERE table_name='mario_env_stats' AND column_name={}) THEN
                             ALTER TABLE mario_env_stats ADD COLUMN {} {};
                         END IF;
                     END $$;
