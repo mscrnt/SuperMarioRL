@@ -53,7 +53,7 @@ class LoggingStatsWrapper(gym.Wrapper):
         # Accumulate total reward
         self.total_reward += reward
 
-        # Separate core stats and RAM-mapped states
+        # Extract stats from the environment
         full_stats = info.get("stats", {})
         core_stats = {
             "env_id": self.env_index,
@@ -68,23 +68,23 @@ class LoggingStatsWrapper(gym.Wrapper):
             "y_pos": full_stats.get("y_pos", 0),
             "score": full_stats.get("score", 0),
             "coins": full_stats.get("coins", 0),
-            "life": full_stats.get("life", 0),
+            "enemy_kills": full_stats.get("enemy_kills", 0),
+            "deaths": full_stats.get("deaths", 0),
+            "flag_get": full_stats.get("flag_get", False),
         }
 
-        # Convert RAM states to JSON-compatible values
-        ram_states = {key: int(value) if isinstance(value, np.integer) else value for key, value in full_stats.items() if key.startswith("0x")}
+        # Include RAM-mapped states
+        ram_states = {
+            key: (int(value) if isinstance(value, (np.integer, np.uint8)) else
+                  float(value) if isinstance(value, (np.floating, np.float32, np.float64)) else value)
+            for key, value in full_stats.items() if key.startswith("0x")
+        }
 
-        # Add RAM-mapped states to `additional_info`
+        # Ensure RAM states are JSON-serializable
         core_stats["additional_info"] = json.dumps(ram_states)
 
         # Log stats to the database
         self.log_to_db(core_stats)
-
-        # Log episode stats if done
-        if done:
-            self.logger.info(f"Episode {self.episode_count} completed. Final stats:")
-            for key, value in core_stats.items():
-                self.logger.info(f"  {key}: {value}")
 
         return obs, reward, done, info
 
@@ -101,13 +101,13 @@ class LoggingStatsWrapper(gym.Wrapper):
         try:
             conn = self.db_manager.get_connection()
             with conn.cursor() as cursor:
-                # Convert numpy types to native Python types
-                sanitized_stats = {key: (int(value) if isinstance(value, (np.integer, np.int64)) else value)
-                                for key, value in stats.items()}
-                sanitized_stats = {key: (float(value) if isinstance(value, (np.floating, np.float64)) else value)
-                                for key, value in sanitized_stats.items()}
-
                 # Dynamically generate the column list and values
+                sanitized_stats = {
+                    key: (int(value) if isinstance(value, (np.integer, np.uint8, np.int64)) else
+                          float(value) if isinstance(value, (np.floating, np.float32, np.float64)) else value)
+                    for key, value in stats.items()
+                }
+
                 columns = ', '.join(sanitized_stats.keys())
                 placeholders = ', '.join(['%s'] * len(sanitized_stats))
                 values = tuple(sanitized_stats.values())

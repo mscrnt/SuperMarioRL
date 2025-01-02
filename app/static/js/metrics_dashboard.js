@@ -1,58 +1,100 @@
-// path: /static/js/metrics_dashboard.js
-
 /**
  * Fetch and initialize metrics for the dashboard.
+ * @param {Array<string>} statKeys List of stats to fetch
+ * @param {string} groupBy Column to group the stats by (default is "step")
  */
-async function fetchMetricsData() {
+async function fetchMetricsData(statKeys, groupBy = "step") {
     try {
-        const response = await fetch("/metrics/data"); // API to fetch metrics
+        const queryParams = new URLSearchParams();
+        queryParams.append("group_by", groupBy);
+        statKeys.forEach((key) => queryParams.append("stat_keys", key));
+
+        const response = await fetch(`/metrics/data?${queryParams.toString()}`);
         if (!response.ok) throw new Error("Failed to fetch metrics data.");
 
         const metricsData = await response.json();
-        populateMetricsCharts(metricsData);
+        populateMetricsCharts(metricsData, statKeys);
         console.log("Metrics data fetched and charts updated.");
     } catch (error) {
         console.error("Error fetching metrics data:", error);
-
-        // Use placeholder values if fetching metrics data fails
-        populateMetricsCharts({}); // Pass an empty object
+        populateMetricsCharts({}, statKeys); // Fallback with empty data
     }
 }
 
 /**
  * Populate and update all dashboard metrics.
  * @param {Object} data Metrics data from the server
+ * @param {Array<string>} statKeys List of stats being tracked
  */
-function populateMetricsCharts(data) {
-    // Calculate Kill/Death Ratios
-    const monitorKills = data.env0Stats?.enemy_kills || 0;
-    const monitorDeaths = data.env0Stats?.deaths || 1; // Avoid division by zero
-    const monitorKD = (monitorKills / monitorDeaths).toFixed(2) || "6.9";
+function populateMetricsCharts(data, statKeys) {
+    statKeys.forEach((stat) => {
+        const monitorData = data.env0Stats?.[stat] || {};
+        const trainingData = data.trainingStats?.[stat] || {};
 
-    const trainingKills = data.trainingStats?.enemy_kills || 0;
-    const trainingDeaths = data.trainingStats?.deaths || 1; // Avoid division by zero
-    const trainingKD = (trainingKills / trainingDeaths).toFixed(2) || "6.9";
+        console.log(`Processing stat: ${stat}`);
+        console.log("Monitor Data:", monitorData);
+        console.log("Training Data:", trainingData);
 
-    // Display K/D Ratios
-    updateKDDisplay("env0-kd-display", "Monitor K/D", monitorKD);
-    updateKDDisplay("training-kd-display", "Training K/D", trainingKD);
+        // Update charts for the current stat
+        destroyAndUpdateChart(
+            `env0-${stat}-chart`,
+            `Monitor Env - ${stat}`,
+            monitorData,
+            "line"
+        );
+        destroyAndUpdateChart(
+            `training-${stat}-chart`,
+            `Training - ${stat}`,
+            trainingData,
+            "line"
+        );
 
-    // Update the Reward Comparison Meter
-    const monitorRewards = Object.values(data.env0 || {}).reduce((a, b) => a + b, 0);
-    const trainingRewards = Object.values(data.training || {}).reduce((a, b) => a + b, 0);
-    updateRewardComparisonMeter(monitorRewards, trainingRewards);
+        // Special handling for Kill/Death Ratio
+        if (stat === "enemy_kills" || stat === "deaths") {
+            calculateAndDisplayKD(data);
+        }
+    });
 
-    // Update other charts
-    destroyAndUpdateChart("env0-reward-chart", "Monitor Env - Reward Distribution", data.rewardDistribution || {}, "pie");
-    destroyAndUpdateChart("training-reward-chart", "Training - Reward Distribution", data.rewardDistribution || {}, "pie");
+    // Reward Comparison Meter (if "reward" is included)
+    if (statKeys.includes("reward")) {
+        const monitorRewards = Object.values(data.env0Stats?.reward || {}).reduce((a, b) => a + b, 0);
+        const trainingRewards = Object.values(data.trainingStats?.reward || {}).reduce((a, b) => a + b, 0);
+
+        console.log(`Monitor Rewards: ${monitorRewards}`);
+        console.log(`Training Rewards: ${trainingRewards}`);
+
+        updateRewardComparisonMeter(monitorRewards, trainingRewards);
+    }
 }
 
+
 /**
- * Refresh metrics every 10 seconds.
+ * Refresh metrics periodically.
+ * @param {Array<string>} statKeys List of stats to fetch
+ * @param {number} interval Refresh interval in milliseconds (default 10 seconds)
  */
-function startMetricsRefresh() {
-    fetchMetricsData(); // Fetch immediately on page load
-    setInterval(fetchMetricsData, 10000); // Refresh every 10 seconds
+function startMetricsRefresh(statKeys, interval = 10000) {
+    fetchMetricsData(statKeys); // Fetch immediately on page load
+    setInterval(() => fetchMetricsData(statKeys), interval); // Refresh periodically
+}
+/**
+ * Calculate and display the K/D ratio for monitor and training environments.
+ * @param {Object} data Metrics data from the server
+ */
+function calculateAndDisplayKD(data) {
+    const monitorKills = Object.values(data.env0Stats?.enemy_kills || {}).reduce((a, b) => a + b, 0);
+    const monitorDeaths = Object.values(data.env0Stats?.deaths || {}).reduce((a, b) => a + b, 0);
+    const monitorKD = monitorDeaths > 0 ? (monitorKills / monitorDeaths).toFixed(2) : "Infinity";
+
+    const trainingKills = Object.values(data.trainingStats?.enemy_kills || {}).reduce((a, b) => a + b, 0);
+    const trainingDeaths = Object.values(data.trainingStats?.deaths || {}).reduce((a, b) => a + b, 0);
+    const trainingKD = trainingDeaths > 0 ? (trainingKills / trainingDeaths).toFixed(2) : "Infinity";
+
+    console.log(`Monitor K/D: ${monitorKills}/${monitorDeaths} = ${monitorKD}`);
+    console.log(`Training K/D: ${trainingKills}/${trainingDeaths} = ${trainingKD}`);
+
+    updateKDDisplay("env0-kd-display", "Monitor K/D", monitorKD);
+    updateKDDisplay("training-kd-display", "Training K/D", trainingKD);
 }
 
 /**
@@ -86,7 +128,7 @@ function destroyAndUpdateChart(chartId, label, data, type) {
         if (!window.charts) window.charts = {};
     }
 
-    const labels = Object.keys(data).map((key) => (type === "line" ? `Step ${key}` : key));
+    const labels = Object.keys(data).map((key) => `Step ${key}`);
     const values = Object.values(data);
 
     window.charts[chartId] = new Chart(ctx, {
@@ -97,8 +139,8 @@ function destroyAndUpdateChart(chartId, label, data, type) {
                 {
                     label,
                     data: values,
-                    borderColor: type === "line" ? "blue" : undefined,
-                    borderWidth: type === "line" ? 2 : undefined,
+                    borderColor: "blue",
+                    borderWidth: 2,
                     backgroundColor: type === "pie" ? ["gold", "silver", "gray"] : undefined,
                 },
             ],
@@ -161,8 +203,9 @@ function initializeVideoFeed() {
  * Initialize listeners for Metrics Dashboard.
  */
 function initializeListenersForMetricsDashboard() {
+    const statKeys = ["enemy_kills", "deaths", "reward"]; // Specify the stats you want to track
     initializeVideoFeed();
-    startMetricsRefresh();
+    startMetricsRefresh(statKeys);
     console.log("Listeners for Metrics Dashboard initialized.");
 }
 

@@ -314,7 +314,7 @@
         }
     },
     "0x001D": {
-        "category": "Power-ups",
+        "category": "Player",
         "description": "Player float state",
         "values": {
             "0x00": "Standing on solid/else",
@@ -365,7 +365,7 @@
             "0x82": "Power-up moving left"
         }
     },
-    "0x0046-0x004B": {
+    "0x0046-0x004A": {
         "category": "Enemies",
         "description": "Enemy heading direction",
         "values": {

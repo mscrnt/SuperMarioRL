@@ -1,6 +1,6 @@
 # path: routes/dashboard_routes.py
 
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, request
 from gui import DEFAULT_HYPERPARAMETERS, DEFAULT_TRAINING_CONFIG, DEFAULT_PATHS
 from utils import load_blueprints  # Ensure this is correctly defined elsewhere
 import importlib
@@ -81,45 +81,75 @@ def create_dashboard_blueprint(training_manager, app_logger, DBManager):
         """
         return render_template("metrics_dashboard.html", title="Metrics Dashboard")
 
-        
     @dashboard_blueprint.route("/metrics/data", methods=["GET"])
     def fetch_metrics_data():
+        """
+        Fetch metrics dynamically based on query parameters, supporting JSONB fields.
+        """
         try:
-            conn = DBManager.get_connection()
-            with conn.cursor() as cursor:
-                # Fetch aggregate metrics for env_id=0
-                cursor.execute("""
-                    SELECT step, SUM(total_reward) as total_reward
-                    FROM mario_env_stats
-                    WHERE env_id = 0
-                    GROUP BY step
-                    ORDER BY step;
-                """)
-                env0_data = cursor.fetchall()
+            # Extract query parameters
+            stat_keys = request.args.getlist("stat_keys")  # List of stats to fetch
+            group_by = request.args.get("group_by", "step")  # Default grouping by "step"
+            aggregation_type = request.args.get("agg_type", "SUM").upper()  # Aggregation type (SUM, AVG, etc.)
 
-                # Fetch aggregate metrics for env_id > 0
-                cursor.execute("""
-                    SELECT step, AVG(total_reward) as avg_reward
-                    FROM mario_env_stats
-                    WHERE env_id > 0
-                    GROUP BY step
-                    ORDER BY step;
-                """)
-                training_data = cursor.fetchall()
+            if not stat_keys:
+                return jsonify({"error": "No stat_keys provided"}), 400
+
+            if aggregation_type not in {"SUM", "AVG", "COUNT", "MAX", "MIN"}:
+                return jsonify({"error": f"Invalid aggregation type '{aggregation_type}' provided."}), 400
+
+            conn = DBManager.get_connection()
+            data = {"env0Stats": {}, "trainingStats": {}}
+
+            with conn.cursor() as cursor:
+                for stat in stat_keys:
+                    # Determine whether the stat is a column or a JSONB field
+                    if stat in {"enemy_kills", "deaths", "reward"}:  # Regular columns
+                        column_path = f"{stat}"
+                    else:  # JSONB fields in `additional_info`
+                        column_path = f"additional_info->>'{stat}'"
+
+                    # Debug: Check if the stat exists
+                    if stat in {"enemy_kills", "deaths", "reward"}:
+                        cursor.execute(f"SELECT COUNT(*) FROM mario_env_stats WHERE {stat} IS NOT NULL;")
+                    else:
+                        cursor.execute(f"SELECT COUNT(*) FROM mario_env_stats WHERE additional_info ? '{stat}';")
+                    key_count = cursor.fetchone()[0]
+                    app_logger.info(f"Key '{stat}' exists in {key_count} rows.")
+
+                    if key_count == 0:
+                        app_logger.warning(f"Key '{stat}' does not exist in any rows. Skipping.")
+                        continue
+
+                    # Aggregate metrics for env_id=0 (monitor)
+                    cursor.execute(f"""
+                        SELECT {group_by}, {aggregation_type}(CAST({column_path} AS FLOAT)) as result
+                        FROM mario_env_stats
+                        WHERE env_id = 0 AND ({stat} IS NOT NULL OR additional_info ? '{stat}')
+                        GROUP BY {group_by}
+                        ORDER BY {group_by};
+                    """)
+                    env0_data = cursor.fetchall()
+                    data["env0Stats"][stat] = {row[0]: row[1] for row in env0_data}
+
+                    # Aggregate metrics for env_id > 0 (training)
+                    cursor.execute(f"""
+                        SELECT {group_by}, {aggregation_type}(CAST({column_path} AS FLOAT)) as result
+                        FROM mario_env_stats
+                        WHERE env_id > 0 AND ({stat} IS NOT NULL OR additional_info ? '{stat}')
+                        GROUP BY {group_by}
+                        ORDER BY {group_by};
+                    """)
+                    training_data = cursor.fetchall()
+                    data["trainingStats"][stat] = {row[0]: row[1] for row in training_data}
 
             DBManager.release_connection(conn)
+            app_logger.info(f"Metrics Data Sent: {len(data['env0Stats'])} env0Stats keys and {len(data['trainingStats'])} trainingStats keys.")
+            return jsonify(data)
 
-            # Structure the data
-            metrics = {
-                "env0": {row[0]: row[1] for row in env0_data},  # {step: total_reward}
-                "training": {row[0]: row[1] for row in training_data},  # {step: avg_reward}
-                "rewardDistribution": {"Coins": 40, "Score": 30, "Other": 30},  # Example
-            }
-            return jsonify(metrics)
         except Exception as e:
             app_logger.error(f"Error fetching metrics data: {e}")
             return jsonify({"error": "Failed to fetch metrics data."}), 500
 
-
-
+    
     return dashboard_blueprint

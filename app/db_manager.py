@@ -46,7 +46,7 @@ class DBManager:
     @classmethod
     def _ensure_table_exists(cls):
         """
-        Ensure the 'mario_env_stats' table exists in the database.
+        Ensure the 'mario_env_stats' table exists in the database with the required schema.
         """
         create_table_query = sql.SQL("""
         CREATE TABLE IF NOT EXISTS mario_env_stats (
@@ -67,6 +67,11 @@ class DBManager:
             additional_info JSONB
         );
         """)
+        required_columns = {
+            "enemy_kills": "INT DEFAULT 0",
+            "deaths": "INT DEFAULT 0",
+            "flag_get": "BOOLEAN DEFAULT FALSE"
+        }
         conn = None
         try:
             conn = cls.get_connection()
@@ -74,13 +79,32 @@ class DBManager:
                 # Ensure the table exists
                 cursor.execute(create_table_query)
                 conn.commit()
-            logger.info("Verified or created the 'mario_env_stats' table successfully.")
+
+                # Check and add missing columns dynamically
+                for column, column_type in required_columns.items():
+                    cls._add_column_if_not_exists(cursor, "mario_env_stats", column, column_type)
+
+            logger.info("Verified or updated the 'mario_env_stats' table schema successfully.")
         except Exception as e:
             logger.error(f"Error ensuring table existence: {e}")
             raise
         finally:
             if conn:
                 cls.release_connection(conn)
+
+    @classmethod
+    def _add_column_if_not_exists(cls, cursor, table_name, column_name, column_type):
+        """
+        Add a column to a table if it does not exist.
+        """
+        try:
+            cursor.execute(f"""
+            ALTER TABLE {table_name}
+            ADD COLUMN IF NOT EXISTS {column_name} {column_type};
+            """)
+            logger.info(f"Column '{column_name}' ensured in table '{table_name}'.")
+        except Exception as e:
+            logger.error(f"Failed to add column '{column_name}' to table '{table_name}': {e}")
 
     @classmethod
     def get_connection(cls):
