@@ -37,8 +37,8 @@ class EnhancedStatsWrapper(gym.Wrapper):
         self.episode_deaths = 0
         self.episode_coins = 0
 
-        # Track death state
-        self._death_logged = False
+        # Track the player's lives
+        self.previous_life = self._get_life()
 
     def _load_ram_mapping(self, json_path):
         """Load RAM state mapping from a JSON file."""
@@ -94,8 +94,8 @@ class EnhancedStatsWrapper(gym.Wrapper):
 
     def _track_deaths(self):
         """
-        Track deaths by checking the player's state in RAM at address 0x000E.
-        Only count a death once per episode when the state indicates 'Dying' or 'Player dies'.
+        Track deaths by checking the player's state in RAM at address 0x000E
+        and by comparing the number of lives.
         """
         player_state_address = int("0x000E", 16)
         player_state = self._get_ram_value(player_state_address)
@@ -103,13 +103,24 @@ class EnhancedStatsWrapper(gym.Wrapper):
         # States indicating death
         death_states = [0x06, 0x0B]  # "Player dies" and "Dying" from the description
 
-        if player_state in death_states and not self._death_logged:
+        current_life = self._get_life()
+
+        # Count death if player is in a death state or if the lives have decreased
+        if player_state in death_states or current_life < self.previous_life:
             self.episode_deaths += 1
             self.total_deaths += 1
             self.logger.info(f"Death detected. Episode deaths: {self.episode_deaths}, Total deaths: {self.total_deaths}")
-            self._death_logged = True  # Prevent double-counting within the same death event
-        elif player_state not in death_states:
-            self._death_logged = False  # Reset for future death events
+
+        # Update previous life
+        self.previous_life = current_life
+
+    def _get_life(self):
+        """Retrieve the current life count from RAM."""
+        life_address = int("0x075A", 16)
+        try:
+            return self._get_ram_value(life_address)
+        except Exception:
+            return 3  # Default life count
 
     def _get_mapped_states(self):
         """Extract all RAM states from the mapping and return a dictionary."""
@@ -168,5 +179,5 @@ class EnhancedStatsWrapper(gym.Wrapper):
         self.episode_enemy_kills = 0
         self.episode_deaths = 0
         self.episode_coins = 0
-        self._death_logged = False  # Reset death tracking flag
+        self.previous_life = self._get_life()  # Reset life tracking
         return {"frame": obs, "stats": np.zeros(15, dtype=np.float32)}
