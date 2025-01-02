@@ -22,7 +22,7 @@ class DBManager:
                 try:
                     cls._db_pool = SimpleConnectionPool(
                         minconn=1,
-                        maxconn=20,
+                        maxconn=33,
                         dbname=DB_CONFIG["dbname"],
                         user=DB_CONFIG["user"],
                         password=DB_CONFIG["password"],
@@ -64,47 +64,26 @@ class DBManager:
             score INT DEFAULT 0,
             coins INT DEFAULT 0,
             life INT DEFAULT 0,
-            additional_info JSONB
+            additional_info JSONB,
+            enemy_kills INT DEFAULT 0,
+            deaths INT DEFAULT 0,
+            flag_get BOOLEAN DEFAULT FALSE
         );
         """)
-        required_columns = {
-            "enemy_kills": "INT DEFAULT 0",
-            "deaths": "INT DEFAULT 0",
-            "flag_get": "BOOLEAN DEFAULT FALSE"
-        }
         conn = None
         try:
             conn = cls.get_connection()
             with conn.cursor() as cursor:
-                # Ensure the table exists
+                # Ensure the table exists with all columns
                 cursor.execute(create_table_query)
                 conn.commit()
-
-                # Check and add missing columns dynamically
-                for column, column_type in required_columns.items():
-                    cls._add_column_if_not_exists(cursor, "mario_env_stats", column, column_type)
-
-            logger.info("Verified or updated the 'mario_env_stats' table schema successfully.")
+            logger.info("Verified or created the 'mario_env_stats' table with all required columns.")
         except Exception as e:
             logger.error(f"Error ensuring table existence: {e}")
             raise
         finally:
             if conn:
                 cls.release_connection(conn)
-
-    @classmethod
-    def _add_column_if_not_exists(cls, cursor, table_name, column_name, column_type):
-        """
-        Add a column to a table if it does not exist.
-        """
-        try:
-            cursor.execute(f"""
-            ALTER TABLE {table_name}
-            ADD COLUMN IF NOT EXISTS {column_name} {column_type};
-            """)
-            logger.info(f"Column '{column_name}' ensured in table '{table_name}'.")
-        except Exception as e:
-            logger.error(f"Failed to add column '{column_name}' to table '{table_name}': {e}")
 
     @classmethod
     def get_connection(cls):

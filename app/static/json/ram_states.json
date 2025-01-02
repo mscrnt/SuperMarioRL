@@ -285,7 +285,7 @@
             "0xFF": "Will kill them off (like getting hit by a star)"
         }
     },
-    "0x03AE": {
+    "0x03AE-0x03B2": {
         "category": "Enemies",
         "description": "Enemy x pos within current screen offset."
     },
@@ -425,5 +425,77 @@
             "0x03": "Underground",
             "0x04": "Castle"
         }
+    },
+    "0x0756": {
+        "category": "Player",
+        "description": "Powerup state",
+        "values": {
+            "0x00": "Small",
+            "0x01": "Big",
+            ">0x02": "Fiery"
+        }
+    },
+    "0x0702": {
+        "category": "Player",
+        "description": "Walk animation",
+        "values": {
+            "0xE4": "Running",
+            "0x30": "Skidding",
+            "0x98": "Normal"
+        }
+    },
+    "0x0701": {
+        "category": "Player",
+        "description": "Friction Adder High",
+        "values": {
+            "0x01": "Breaking (stand still immediately when stopping movement)"
+        }
+    },
+    "0x0491": {
+        "category": "Collision",
+        "description": "Enemy Collision Bits",
+        "values": {
+            "0x00": "No collision",
+            "0x01": "Player collided with enemy"
+        }
+    },
+    "0x04AC": {
+        "category": "Hitbox",
+        "description": "Player hitbox",
+        "structure": "1x4 bytes, <<x1,y1> <x2,y2>>"
+    },
+    "0x04B0": {
+        "category": "Hitbox",
+        "description": "Enemy hitboxes",
+        "structure": "5x4 bytes, <<x1,y1> <x2,y2>>"
+    },
+    "0x04C4": {
+        "category": "Hitbox",
+        "description": "Powerup hitbox",
+        "structure": "1x4 bytes, <<x1,y1> <x2,y2>>"
+    },
+    "0x04C8": {
+        "category": "Hitbox",
+        "description": "(Fiery) Fireball hitbox",
+        "structure": "2x4 bytes, <<x1,y1> <x2,y2>>"
+    },
+    "0x04D0": {
+        "category": "Hitbox",
+        "description": "Hammer hitbox",
+        "structure": "9x4 bytes, <<x1,y1> <x2,y2>>"
+    },
+    "0x04E0": {
+        "category": "Hitbox",
+        "description": "Coin hitboxes",
+        "structure": "3x4 bytes, <<x1,y1> <x2,y2>>"
+    },
+    "0x0500-0x069F": {
+        "category": "Tiles",
+        "description": "Current tile (does not affect graphics)"
+    },
+    "0x06CE": {
+        "category": "Fireball",
+        "description": "Fireball counter",
+        "notes": "Increments as you fire. First bit probably used to toggle between hitbox indices"
     }
 }

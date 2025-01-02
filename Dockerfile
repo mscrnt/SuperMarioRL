@@ -38,7 +38,7 @@ COPY init_postgres.sh /docker-entrypoint-initdb.d/init_postgres.sh
 RUN chmod +x /docker-entrypoint-initdb.d/init_postgres.sh
 
 # Expose the Flask and PostgreSQL ports
-EXPOSE 5000 5432
+EXPOSE 5000 5432 6006
 
 # Set the entry point to the initialization script
 CMD ["/docker-entrypoint-initdb.d/init_postgres.sh"]
