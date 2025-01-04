@@ -245,17 +245,28 @@ class TrainingManager:
 
             # Create training environments
             num_envs = int(self.config["num_envs"])
-            env_fns = [
-                create_env(
-                    random_stages=self.config["random_stages"],
-                    stages=self.config["stages"],
-                    env_index=i + 1,
-                    selected_wrappers=self.selected_wrappers,
-                    blueprints=self.wrapper_blueprints,
-                    db_manager=self.db_manager  # Pass db_manager here
-                )
-                for i in range(num_envs)
-            ]
+            if self.config["random_stages"] == "True":
+                env_fns = [
+                    create_env(
+                        random_stages=self.config["random_stages"],
+                        stages=self.config["stages"],
+                        env_index=i + 1,
+                        selected_wrappers=self.selected_wrappers,
+                        blueprints=self.wrapper_blueprints,
+                        db_manager=self.db_manager  # Pass db_manager here
+                    )
+                    for i in range(num_envs)
+                ]
+            else:
+                env_fns = [
+                    create_env(
+                        env_index=i + 1,
+                        selected_wrappers=self.selected_wrappers,
+                        blueprints=self.wrapper_blueprints,
+                        db_manager=self.db_manager  # Pass db_manager here
+                    )
+                    for i in range(num_envs)
+                ]
             self.env = VecMonitor(SubprocVecEnv(env_fns))
 
             # Create PPO model
