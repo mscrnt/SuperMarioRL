@@ -236,12 +236,22 @@ class TrainingManager:
         """Initialize the environment and the model."""
         try:
             # Pass db_manager when creating the render environment
-            self.render_env = create_env(
-                env_index=0,
-                selected_wrappers=self.selected_wrappers,
-                blueprints=self.wrapper_blueprints,
-                db_manager=self.db_manager  # Pass db_manager here
-            )()
+            if self.config["random_stages"] == "True":
+                self.render_env = create_env(
+                    random_stages=self.config["random_stages"],
+                    stages=self.config["stages"],
+                    env_index=0,
+                    selected_wrappers=self.selected_wrappers,
+                    blueprints=self.wrapper_blueprints,
+                    db_manager=self.db_manager  # Pass db_manager here
+                )()
+            else:
+                self.render_env = create_env(
+                    env_index=0,
+                    selected_wrappers=self.selected_wrappers,
+                    blueprints=self.wrapper_blueprints,
+                    db_manager=self.db_manager  # Pass db_manager here
+                )()
 
             # Create training environments
             num_envs = int(self.config["num_envs"])

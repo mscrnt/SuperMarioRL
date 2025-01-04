@@ -121,10 +121,10 @@ def create_env(random_stages=False, stages=None, env_index=1, selected_wrappers=
         # Create base environment
         if random_stages:
             env = gym_super_mario_bros.make("SuperMarioBrosRandomStages-v0", stages=stages)
-            env_logger.debug(f"Base environment created with random stages: {stages}")
+            env_logger.info(f"Base environment created with random stages: {stages}")
         else:
             env = gym_super_mario_bros.make("SuperMarioBros-v0")
-            env_logger.debug("Base environment created without random stages.")
+            env_logger.info("Base environment created without random stages.")
 
         # Process dynamically selected wrappers
         wrappers_order = [
