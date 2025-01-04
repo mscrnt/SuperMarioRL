@@ -497,5 +497,74 @@
         "category": "Fireball",
         "description": "Fireball counter",
         "notes": "Increments as you fire. First bit probably used to toggle between hitbox indices"
+    },
+    "0x00B5": {
+        "category": "Player",
+        "description": "Player vertical screen position",
+        "values": {
+            "1": "Viewport",
+            "0": "Above viewport",
+            ">1": "Below viewport (falling)"
+        }
+    },
+    "0x00CE": {
+        "category": "Player",
+        "description": "Player Y position on screen",
+        "calculation": "Multiply with 0x00B5 for level Y position"
+    },
+    "0x00B6-0x00BA": {
+        "category": "Enemy",
+        "description": "Enemy vertical screen position",
+        "values": {
+            "1": "Viewport",
+            "0": "Above viewport",
+            ">1": "Below viewport (falling)"
+        }
+    },
+    "0x00CF-0x00D3": {
+        "category": "Enemy",
+        "description": "Enemy Y position on screen",
+        "calculation": "Multiply with 0x00B6/A for level Y position"
+    },
+    "0x00D4": {
+        "category": "Powerup",
+        "description": "Powerup sprite Y position",
+        "calculation": "Multiply with 0x00BB for level Y position"
+    },
+    "0x00D7-0x00D9": {
+        "category": "Environment",
+        "description": "Brick smash 1 X position"
+    },
+    "0x00D8-0x00DA": {
+        "category": "Environment",
+        "description": "Brick smash 2 X position"
+    },
+    "0x00E4-0x00E6": {
+        "category": "Environment",
+        "description": "Y position of air bubbles when underwater"
+    },
+    "0x00A6": {
+        "category": "Projectile",
+        "description": "Fireball Y speed"
+    },
+    "0x00A7": {
+        "category": "Projectile",
+        "description": "Fireball 2 Y position"
+    },
+    "0x00D6": {
+        "category": "Enemy",
+        "description": "Vertical 1 vertical speed"
+    },
+    "0x00D7": {
+        "category": "Projectile",
+        "description": "Fireball 2 vertical speed"
+    },
+    "0x00E7": {
+        "category": "Level",
+        "description": "Level layout address"
+    },
+    "0x00E9": {
+        "category": "Level",
+        "description": "Enemy layout address"
     }
 }

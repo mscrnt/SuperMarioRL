@@ -159,6 +159,10 @@ class EnhancedStatsWrapper(gym.Wrapper):
         coins_this_step = self._get_ram_value(int("0x075E", 16))
         self.episode_coins += coins_this_step
 
+        # Check if Mario is falling into a pit based on 0x00B5
+        player_vertical_position = self._get_ram_value(int("0x00B5", 16))
+        falling_into_pit = 1 < player_vertical_position <= 5  # True if vertical position is between 2 and 5 inclusive
+
         # Collect step-specific statistics
         stats = {
             "coins": coins_this_step,
@@ -170,14 +174,15 @@ class EnhancedStatsWrapper(gym.Wrapper):
             "flag_get": bool(self._get_ram_value(int("0x001D", 16)) == 3),
             "world": self._get_ram_value(int("0x075F", 16)) + 1,
             "stage": self._get_ram_value(int("0x0760", 16)) + 1,
+            "falling_into_pit": falling_into_pit  # New stat to track falling
         }
 
         # Add all mapped RAM states
         stats.update(self._get_mapped_states())
 
-        if done:
-            readable_stats = ", ".join([f"{key}: {value}" for key, value in stats.items()])
-            self.logger.info(f"Env {self.env_index} stats: {readable_stats}")
+        # if done:
+        #     readable_stats = ", ".join([f"{key}: {value}" for key, value in stats.items()])
+        #     self.logger.info(f"Env {self.env_index} stats: {readable_stats}")
 
         # Ensure stats fit the observation space
         stats_values = list(stats.values())[:15]
@@ -187,6 +192,7 @@ class EnhancedStatsWrapper(gym.Wrapper):
         processed_obs = {"frame": obs, "stats": np.array(stats_values, dtype=np.float32)}
         info["stats"] = stats  # Pass all stats, including RAM states, through info
         return processed_obs, reward, done, info
+
 
     def reset(self, **kwargs):
         """
