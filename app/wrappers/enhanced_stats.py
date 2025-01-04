@@ -51,19 +51,10 @@ class EnhancedStatsWrapper(gym.Wrapper):
             self.logger.error(f"Failed to load RAM mapping from {json_path}: {e}")
             return {}
 
-    def _parse_address_range(self, address):
-        """Parse a RAM address or range and return a list of integers."""
-        try:
-            if '-' in address:
-                start, end = address.split('-')
-                return list(range(int(start, 16), int(end, 16) + 1))
-            return [int(address, 16)]
-        except ValueError:
-            self.logger.warning(f"Invalid address format: {address}. Skipping.")
-            return []
-
     def _get_nes_env(self):
-        """Retrieve the underlying NESEnv instance, even if wrapped in multiple layers."""
+        """
+        Retrieve the underlying NESEnv instance, even if wrapped in multiple layers.
+        """
         env = self.env
         while hasattr(env, 'env'):
             env = env.env
@@ -72,7 +63,9 @@ class EnhancedStatsWrapper(gym.Wrapper):
         raise TypeError("Unable to locate NESEnv within wrapped environment.")
 
     def _get_ram_value(self, address):
-        """Retrieve a RAM value from the NESEnv instance."""
+        """
+        Retrieve a RAM value from the NESEnv instance.
+        """
         try:
             nes_env = self._get_nes_env()
             return nes_env.ram[address]
@@ -80,8 +73,20 @@ class EnhancedStatsWrapper(gym.Wrapper):
             self.logger.error(f"Failed to retrieve RAM value at address {hex(address)}: {e}")
             return 0
 
+    def _get_life(self):
+        """
+        Retrieve the current life count from RAM.
+        """
+        life_address = int("0x075A", 16)  # Address for the life count
+        try:
+            return self._get_ram_value(life_address)
+        except Exception:
+            return 3  # Default life count
+
     def _read_enemy_kills(self):
-        """Count enemy kills from their states in RAM."""
+        """
+        Count enemy kills based on RAM states. 
+        """
         enemy_state_addresses = []
         for addr, data in self.ram_mapping.items():
             if data["category"] == "Enemies":
@@ -100,27 +105,33 @@ class EnhancedStatsWrapper(gym.Wrapper):
         player_state_address = int("0x000E", 16)
         player_state = self._get_ram_value(player_state_address)
 
-        # States indicating death
-        death_states = [0x06, 0x0B]  # "Player dies" and "Dying" from the description
+        # State indicating death
+        death_state = 0x06  # "Player dies"
 
         current_life = self._get_life()
 
-        # Count death if player is in a death state or if the lives have decreased
-        if player_state in death_states or current_life < self.previous_life:
+        # Count death if player is in the death state or if the lives have decreased
+        if player_state == death_state or current_life < self.previous_life:
             self.episode_deaths += 1
             self.total_deaths += 1
-            self.logger.info(f"Death detected. Episode deaths: {self.episode_deaths}, Total deaths: {self.total_deaths}")
+            self.logger.info(
+                f"Death detected. Episode deaths: {self.episode_deaths}, Total deaths: {self.total_deaths}"
+            )
 
         # Update previous life
         self.previous_life = current_life
 
-    def _get_life(self):
-        """Retrieve the current life count from RAM."""
-        life_address = int("0x075A", 16)
+
+    def _parse_address_range(self, address):
+        """Parse a RAM address or range and return a list of integers."""
         try:
-            return self._get_ram_value(life_address)
-        except Exception:
-            return 3  # Default life count
+            if '-' in address:
+                start, end = address.split('-')
+                return list(range(int(start, 16), int(end, 16) + 1))
+            return [int(address, 16)]
+        except ValueError:
+            self.logger.warning(f"Invalid address format: {address}. Skipping.")
+            return []
 
     def _get_mapped_states(self):
         """Extract all RAM states from the mapping and return a dictionary."""
@@ -134,19 +145,19 @@ class EnhancedStatsWrapper(gym.Wrapper):
         return states
 
     def step(self, action):
-        """Override the step method to track and add all mapped states to stats."""
+        """
+        Override the step method to track stats and enhance the observation.
+        """
         obs, reward, done, info = self.env.step(action)
 
         # Track kills and deaths
         kills_this_step = self._read_enemy_kills()
         self.episode_enemy_kills += kills_this_step
-        self.total_enemy_kills += kills_this_step
         self._track_deaths()
 
         # Track coins
         coins_this_step = self._get_ram_value(int("0x075E", 16))
         self.episode_coins += coins_this_step
-        self.total_coins += coins_this_step
 
         # Collect step-specific statistics
         stats = {
@@ -155,7 +166,7 @@ class EnhancedStatsWrapper(gym.Wrapper):
             "x_pos": self._get_ram_value(int("0x071C", 16)),
             "time": self._get_ram_value(int("0x0747", 16)),
             "enemy_kills": kills_this_step,
-            "deaths": self.episode_deaths,  # Updated deaths count
+            "deaths": self.episode_deaths,
             "flag_get": bool(self._get_ram_value(int("0x001D", 16)) == 3),
             "world": self._get_ram_value(int("0x075F", 16)) + 1,
             "stage": self._get_ram_value(int("0x0760", 16)) + 1,
@@ -163,6 +174,10 @@ class EnhancedStatsWrapper(gym.Wrapper):
 
         # Add all mapped RAM states
         stats.update(self._get_mapped_states())
+
+        if done:
+            readable_stats = ", ".join([f"{key}: {value}" for key, value in stats.items()])
+            self.logger.info(f"Env {self.env_index} stats: {readable_stats}")
 
         # Ensure stats fit the observation space
         stats_values = list(stats.values())[:15]
@@ -174,7 +189,9 @@ class EnhancedStatsWrapper(gym.Wrapper):
         return processed_obs, reward, done, info
 
     def reset(self, **kwargs):
-        """Reset the environment and per-episode stats."""
+        """
+        Reset the environment and per-episode stats.
+        """
         obs = self.env.reset(**kwargs)
         self.episode_enemy_kills = 0
         self.episode_deaths = 0
