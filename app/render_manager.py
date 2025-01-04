@@ -63,7 +63,7 @@ class RenderManager:
 
                 try:
                     with torch.no_grad():
-                        action, _ = self.cached_policy.predict(self.obs, deterministic=False)
+                        action, _ = self.cached_policy.predict(self.obs, deterministic=True)
                     self.obs, _, done, _ = self.render_env.step(action)
                     render_frame_to_queue(self.render_env)
                     if done:
