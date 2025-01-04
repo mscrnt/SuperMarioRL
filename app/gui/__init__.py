@@ -35,7 +35,7 @@ DEFAULT_PATHS = {
 DEFAULT_TRAINING_CONFIG = {
     "num_envs": 1,
     "stages": [],
-    "random_stages": True,
+    "random_stages": False,
     "total_timesteps": 2000000,
     "autosave_freq": 100000,
 }
