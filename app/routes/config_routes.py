@@ -77,7 +77,10 @@ def create_config_blueprint(training_manager, app_logger):
             config_data["enabled_wrappers"] = list(set(config_data.get("enabled_wrappers", []) + required_wrappers))
             config_data["enabled_callbacks"] = list(set(config_data.get("enabled_callbacks", []) + required_callbacks))
 
-            logger.info(f"Configuration '{name}' loaded successfully.")
+            # Update the TrainingManager with the loaded configuration
+            training_manager.set_active_config(config_data)
+
+            logger.info(f"Configuration '{name}' loaded and applied to TrainingManager successfully.")
             return jsonify({"status": "success", "config": config_data})
         except json.JSONDecodeError:
             logger.error(f"Invalid JSON format in configuration '{name}'.")
@@ -85,6 +88,7 @@ def create_config_blueprint(training_manager, app_logger):
         except Exception as e:
             logger.error(f"Error loading configuration '{name}': {e}")
             return jsonify({"status": "error", "message": f"Failed to load configuration '{name}'."}), 500
+
 
     @config_blueprint.route("/delete_config/<name>", methods=["DELETE"])
     def delete_config(name):
@@ -134,6 +138,9 @@ def create_config_blueprint(training_manager, app_logger):
 
             default_config["enabled_wrappers"] = list(set(default_config.get("enabled_wrappers", []) + required_wrappers))
             default_config["enabled_callbacks"] = list(set(default_config.get("enabled_callbacks", []) + required_callbacks))
+
+            # Update the TrainingManager with the loaded configuration
+            training_manager.set_active_config(default_config)
 
             logger.info("Default configuration loaded successfully.")
             return jsonify({"status": "success", "config": default_config})

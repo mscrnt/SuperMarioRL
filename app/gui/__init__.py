@@ -34,10 +34,10 @@ DEFAULT_PATHS = {
 # Default training configuration
 DEFAULT_TRAINING_CONFIG = {
     "num_envs": 1,
-    "stages": [],
-    "random_stages": False,
     "total_timesteps": 2000000,
     "autosave_freq": 100000,
+    "random_stages": False,
+    "stages": [],
 }
 
 DB_CONFIG = {

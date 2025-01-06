@@ -234,16 +234,10 @@ class TrainingManager:
         enabled_wrappers = self.config.get("enabled_wrappers", [])
         enabled_callbacks = self.config.get("enabled_callbacks", [])
 
-        # Process stages
+        # Parse stages input to convert from comma-separated string
         stages = training_config.get("stages", [])
-        if isinstance(stages, str):
-            try:
-                stages = eval(stages) if stages.startswith("[") else []
-                if not isinstance(stages, list):
-                    stages = []
-            except Exception as e:
-                logger.warning(f"Invalid stages format: {stages}. Defaulting to an empty list.")
-                stages = []
+        if isinstance(stages, str):  # Convert string to a list
+            stages = [stage.strip() for stage in stages.split(",") if stage.strip()]
         training_config["stages"] = stages
 
         # Parse and merge configurations

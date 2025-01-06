@@ -65,7 +65,7 @@ def create_training_blueprint(training_manager, app_logger, db_manager):
                 logger.info("TrainingManager configuration updated and set as active.")
             except ValueError as e:
                 logger.error(f"Error updating configuration: {e}")
-                return jsonify({"status": "error", "message": str(e)}), 400
+                return jsonify({"status": "error", "message": str(e)}), 400 
 
         def run_training():
             try:

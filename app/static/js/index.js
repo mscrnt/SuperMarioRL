@@ -240,7 +240,11 @@ async function loadCurrentConfig() {
         Object.entries(config.training_config || {}).forEach(([key, value]) => {
             const input = document.querySelector(`[name="training_config[${key}]"]`);
             if (input) {
-                input.value = value !== undefined && value !== null ? value : "";
+                if (input.tagName === "SELECT") {
+                    input.value = value !== undefined && value !== null ? value.toString() : "False";
+                } else {
+                    input.value = value !== undefined && value !== null ? value : "";
+                }
             }
         });
 
@@ -266,6 +270,12 @@ async function loadCurrentConfig() {
         document.querySelectorAll(".callback-checkbox").forEach((checkbox) => {
             checkbox.checked = config.enabled_callbacks.includes(checkbox.value) || checkbox.hasAttribute("disabled");
         });
+
+        // Ensure random_stages defaults to DEFAULT_TRAINING_CONFIG value
+        const randomStagesSelect = document.querySelector(`[name="training_config[random_stages]"]`);
+        if (randomStagesSelect && !randomStagesSelect.value) {
+            randomStagesSelect.value = config.random_stages ? "True" : "False";
+        }
 
         console.log("Active configuration loaded successfully.");
     } catch (error) {

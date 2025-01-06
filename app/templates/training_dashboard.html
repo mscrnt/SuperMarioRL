@@ -35,15 +35,24 @@
                             {% if value is boolean %}
                             <select name="training_config[{{ key }}]" class="config-input">
                                 <option value="True" {% if value == True %}selected{% endif %}>True</option>
-                                <option value="False" {% if value == False %}selected{% endif %}>False</option>
+                                <option value="False" {% if value == False or value == DEFAULT_TRAINING_CONFIG.random_stages %}selected{% endif %}>False</option>
                             </select>
                             {% else %}
-                            <input type="text" name="training_config[{{ key }}]" value="{{ value }}" class="config-input">
+                            <input 
+                                type="text" 
+                                name="training_config[{{ key }}]" 
+                                value="{{ value }}" 
+                                class="config-input"
+                                {% if key == "stages" %}
+                                placeholder="1-1, 1-4, 2-3, 2-4"
+                                {% endif %}
+                            >
                             {% endif %}
                         </label>
                     </div>
                     {% endfor %}
-                </div>
+                </div> 
+                
 
                 <!-- Wrappers and Callbacks Section -->
                 <div id="environment_container" style="display: flex; gap: 40px; margin-top: 20px;">

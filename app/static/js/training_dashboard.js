@@ -446,9 +446,42 @@ function initializeBatchSizeDropdown() {
     populateBatchSizeDropdown();
 }
 
+function toggleStagesTextbox() {
+    const randomStagesDropdown = document.querySelector(`[name="training_config[random_stages]"]`);
+    const stagesTextbox = document.querySelector(`[name="training_config[stages]"]`);
+
+    if (!randomStagesDropdown || !stagesTextbox) {
+        console.error("Random stages dropdown or stages textbox not found.");
+        return;
+    }
+
+    const updateTextboxState = () => {
+        const isRandomStages = randomStagesDropdown.value === "True";
+
+        // Enable/Disable the textbox
+        stagesTextbox.disabled = !isRandomStages;
+
+        // Add hover text and grey-out style when disabled
+        if (!isRandomStages) {
+            // stagesTextbox.value = ""; // Clear the value when disabled
+            stagesTextbox.style.cursor = "not-allowed"; // Cursor indicates not clickable
+            stagesTextbox.title = "Enable 'Random Stages' to modify stages."; // Hover text
+        } else {
+            stagesTextbox.style.backgroundColor = ""; // Reset background color
+            stagesTextbox.style.cursor = ""; // Reset cursor
+            stagesTextbox.title = ""; // Remove hover text
+        }
+    };
+
+    // Initialize the state on page load
+    updateTextboxState();
+
+    // Add event listener for changes
+    randomStagesDropdown.addEventListener("change", updateTextboxState);
+}
+
 
 function initializeListenersForTrainingDashboard() {
-
     // Initialize configuration manager
     initializeConfigManager();
 
@@ -463,6 +496,9 @@ function initializeListenersForTrainingDashboard() {
 
     // Initialize batch size dropdown
     initializeBatchSizeDropdown();
+
+    // Initialize random stages toggle
+    toggleStagesTextbox();
 
     console.log("Listeners for Training Dashboard initialized.");
 }
