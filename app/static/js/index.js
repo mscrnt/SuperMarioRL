@@ -126,10 +126,21 @@ async function loadDynamicContent(url, onLoad, resetToDefault = false) {
             // Execute callback after content loads
             if (typeof onLoad === "function") onLoad();
 
+            // Highlight the active link dynamically
+            const navLinks = document.querySelectorAll(".nav-link");
+            navLinks.forEach(link => {
+                link.classList.remove("active");
+                if (link.getAttribute("href") === url) {
+                    link.classList.add("active");
+                }
+            });
+
             // Call listeners conditionally based on the loaded URL
             if (url.includes("/dashboard/training") && typeof initializeListenersForTrainingDashboard === "function") {
                 initializeListenersForTrainingDashboard();
             }
+
+            console.log(`Content loaded for URL: ${url}`);
         } else {
             contentContainer.innerHTML = "<p>Error loading content. Please try again later.</p>";
         }
@@ -138,6 +149,7 @@ async function loadDynamicContent(url, onLoad, resetToDefault = false) {
         contentContainer.innerHTML = "<p>Error loading content. Please check your connection.</p>";
     }
 }
+
 
 async function resetToDefaultConfig() {
     try {
@@ -187,6 +199,7 @@ function collectTrainingConfig() {
 document.addEventListener("DOMContentLoaded", async () => {
     initializeHeaderControls(); // Set up header controls
     loadCurrentConfig();
+    highlightActivePage();
 
 
     // Automatically load the Training Dashboard on initial load
@@ -281,4 +294,23 @@ async function loadCurrentConfig() {
     } catch (error) {
         console.error("Error loading current configuration:", error);
     }
+}
+
+
+function highlightActivePage() {
+    // Get the current URL path
+    const currentPath = window.location.pathname;
+
+    // Find all navigation links
+    const navLinks = document.querySelectorAll(".nav-link");
+
+    // Remove the active class from all links and set the active class for the matching path
+    navLinks.forEach(link => {
+        link.classList.remove("active");
+        if (link.getAttribute("href") === currentPath) {
+            link.classList.add("active");
+        }
+    });
+
+    console.log(`Active page highlighted: ${currentPath}`);
 }

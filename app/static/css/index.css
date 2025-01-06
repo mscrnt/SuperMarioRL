@@ -1,6 +1,17 @@
+@font-face {
+    font-family: 'Roboto';
+    src: url('Roboto-ThinItalic-webfont.eot');
+    src: url('Roboto-ThinItalic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('Roboto-ThinItalic-webfont.woff') format('woff'),
+         url('Roboto-ThinItalic-webfont.ttf') format('truetype'),
+         url('Roboto-ThinItalic-webfont.svg#RobotoThinItalic') format('svg'); 
+    font-weight: 200;
+    font-style: italic;
+}
+
 /* General Styling */
 body {
-    font-family: 'Press Start 2P', cursive, sans-serif; /* Pixelated retro font */
+    font-family: 'Roboto', serif; /* Pixelated retro font */
     margin: 0;
     padding: 0;
     background: linear-gradient(135deg, #000428, #004e92); /* Retro blue gradient */
@@ -111,4 +122,20 @@ main {
     padding: 1rem 0;
     border-top: 0.2rem solid #f8e71c;
     text-transform: uppercase;
+}
+
+.nav-link.active {
+    font-weight: bold;
+    color: #007BFF !important; /* Ensure active link is blue */
+    text-decoration: underline;
+    text-decoration-color: #f8e71c !important; /* Custom underline color */
+    text-decoration-thickness: 2px; /* Set the thickness of the underline */
+    text-underline-offset: 3px; /* Offset the underline by a few pixels */
+}
+
+
+
+.nav-link.active:hover {
+    color: #007BFF; /* Keep the active color even on hover */
+    text-decoration: underline;
 }
