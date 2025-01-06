@@ -52,15 +52,17 @@ def create_training_blueprint(training_manager, app_logger, db_manager):
                 return jsonify({"status": "running", "message": "Training is already in progress."})
 
             data = request.get_json() or {}
+            logger.debug(f"Received training data: {data}")
             try:
                 # Merge existing active config with new data
                 current_config = training_manager.get_active_config()
                 merged_config = {
                     "training_config": {**current_config.get("training_config", {}), **data.get("training_config", {})},
                     "hyperparameters": {**current_config.get("hyperparameters", {}), **data.get("hyperparameters", {})},
-                    "enabled_wrappers": data.get("wrappers", current_config.get("enabled_wrappers", [])),
-                    "enabled_callbacks": data.get("callbacks", current_config.get("enabled_callbacks", [])),
+                    "enabled_wrappers": list(set(data.get("wrappers", []) + current_config.get("enabled_wrappers", []))),
+                    "enabled_callbacks": list(set(data.get("callbacks", []) + current_config.get("enabled_callbacks", []))),
                 }
+                logger.debug(f"Merged Configuration: {merged_config}")
                 training_manager.set_active_config(merged_config)
                 logger.info("TrainingManager configuration updated and set as active.")
             except ValueError as e:

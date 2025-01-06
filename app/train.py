@@ -269,7 +269,6 @@ class TrainingManager:
         default_config["enabled_callbacks"] = enabled_callbacks
         self.config = default_config
 
-
     def _initialize_callbacks_and_wrappers(self):
         """Initialize selected wrappers and callbacks."""
         logger.debug(f"Config data: {self.config}")
@@ -285,7 +284,7 @@ class TrainingManager:
         self.callback_instances = []
 
         for name, blueprint in self.callback_blueprints.items():
-            if name in enabled_callbacks or blueprint.is_required():
+            if name in enabled_callbacks:
                 logger.debug(f"Initializing callback: {blueprint.name}")
                 self.callback_instances.append(
                     blueprint.create_instance(config=self.config, training_manager=self)
@@ -297,7 +296,7 @@ class TrainingManager:
             logger.warning("No valid callbacks initialized. Training will proceed without callbacks.")
 
         # Initialize wrappers
-        enabled_wrappers = set(self.config.get("enabled_wrappers", []))
+        enabled_wrappers = set(self.config.get("enabled_wrappers", []))  # Get manually selected wrappers
         required_wrappers = {
             name for name, blueprint in self.wrapper_blueprints.items() if blueprint.is_required()
         }
@@ -307,7 +306,7 @@ class TrainingManager:
         self.selected_wrappers = []
 
         for name, blueprint in self.wrapper_blueprints.items():
-            if name in enabled_wrappers or blueprint.is_required():
+            if name in enabled_wrappers:  # Include both required and manually selected wrappers
                 logger.debug(f"Selecting wrapper: {blueprint.name}")
                 self.selected_wrappers.append(blueprint.name)
             else:
@@ -315,6 +314,8 @@ class TrainingManager:
 
         logger.debug(f"Final selected wrappers: {self.selected_wrappers}")
         logger.debug(f"Final selected callbacks: {[callback.__class__.__name__ for callback in self.callback_instances]}")
+
+
 
 
     def _initialize_environments_and_model(self):

@@ -175,6 +175,7 @@ function collectTrainingConfig() {
         callbacks: [],
     };
 
+    // Collect training and hyperparameters input values
     document.querySelectorAll(".config-input").forEach((input) => {
         const name = input.name;
         const value = input.value;
@@ -185,16 +186,25 @@ function collectTrainingConfig() {
         }
     });
 
-    document.querySelectorAll(".wrapper-checkbox:checked").forEach((checkbox) => {
-        config.wrappers.push(checkbox.value);
+    // Collect wrappers
+    document.querySelectorAll(".wrapper-checkbox").forEach((checkbox) => {
+        if (checkbox.checked) {
+            config.wrappers.push(checkbox.value); // Push the value, not dataset.key
+        }
     });
 
-    document.querySelectorAll(".callback-checkbox:checked").forEach((checkbox) => {
-        config.callbacks.push(checkbox.value);
+    // Collect callbacks
+    document.querySelectorAll(".callback-checkbox").forEach((checkbox) => {
+        if (checkbox.checked) {
+            config.callbacks.push(checkbox.value); // Push the value, not dataset.key
+        }
     });
+
+    console.log("Collected Configuration:", config);
 
     return config;
 }
+
 
 document.addEventListener("DOMContentLoaded", async () => {
     initializeHeaderControls(); // Set up header controls

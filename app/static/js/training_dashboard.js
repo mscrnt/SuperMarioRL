@@ -174,24 +174,42 @@ function initializeConfigManager() {
         // Populate training config fields
         Object.entries(config.training_config || {}).forEach(([key, value]) => {
             const input = document.querySelector(`[name="training_config[${key}]"]`);
-            if (input) input.value = value !== undefined && value !== null ? value : "";
+            if (input) {
+                if (input.tagName === "SELECT") {
+                    input.value = value !== undefined && value !== null ? value.toString() : "False";
+                } else {
+                    input.value = value !== undefined && value !== null ? value : "";
+                }
+            }
         });
 
         // Populate hyperparameters fields
         Object.entries(config.hyperparameters || {}).forEach(([key, value]) => {
             const input = document.querySelector(`[name="hyperparameters[${key}]"]`);
-            if (input) input.value = value !== undefined && value !== null ? value : "";
+            if (input) {
+                if (input.type === "number" && value !== null && value !== undefined) {
+                    input.value = parseFloat(value); // Ensure numeric inputs have numeric values
+                } else {
+                    input.value = value !== undefined && value !== null ? value : "";
+                }
+            }
         });
 
-        // Populate wrapper and callback checkboxes
+        // Populate wrapper checkboxes
         document.querySelectorAll(".wrapper-checkbox").forEach((checkbox) => {
-            checkbox.checked = config.enabled_wrappers.includes(checkbox.value) || checkbox.hasAttribute("disabled");
+            const wrapperName = checkbox.value;
+            checkbox.checked = config.enabled_wrappers?.includes(wrapperName) || checkbox.hasAttribute("disabled");
         });
 
+        // Populate callback checkboxes
         document.querySelectorAll(".callback-checkbox").forEach((checkbox) => {
-            checkbox.checked = config.enabled_callbacks.includes(checkbox.value) || checkbox.hasAttribute("disabled");
+            const callbackName = checkbox.value;
+            checkbox.checked = config.enabled_callbacks?.includes(callbackName) || checkbox.hasAttribute("disabled");
         });
+
+        console.log("Configuration fields populated successfully.");
     }
+
 
     // Save the current configuration
     async function saveCurrentConfig() {
