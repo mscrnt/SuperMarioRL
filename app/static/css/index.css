@@ -74,6 +74,20 @@ body {
     color: #007BFF;
 }
 
+/* Training Status */
+#training-status {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+#training-status h2 {
+    margin: 0;
+    font-size: 2rem;
+}
+
+
 /* Buttons */
 button {
     background: #f8e71c; /* Bright yellow retro button */

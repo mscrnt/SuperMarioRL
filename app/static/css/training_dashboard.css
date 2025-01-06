@@ -2,7 +2,7 @@
 .video-container {
     width: 80%;
     max-width: 38rem; /* Keeps aspect ratio manageable */
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 8 / 7;
     margin: 0 auto;
     overflow: hidden;
     border: 0.2rem solid #f8e71c; /* Bright yellow border */
@@ -31,20 +31,6 @@
     font-family: 'Courier New', Courier, monospace; /* Retro terminal font */
     color: #50e3c2;
 }
-
-/* Training Status */
-#training-status {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 1rem;
-}
-
-#training-status h2 {
-    margin: 0;
-    font-size: 1rem;
-}
-
 /* Forms and Inputs */
 input, select {
     font-family: 'Press Start 2P', cursive, sans-serif;
@@ -178,7 +164,7 @@ h2 {
 .tooltip-content h2 {
     color: #f8e71c;
     text-transform: uppercase;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
 }
 
 .tooltip-content h3 {
