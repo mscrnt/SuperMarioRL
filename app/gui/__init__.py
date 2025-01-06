@@ -2,8 +2,8 @@
 
 # Default hyperparameters
 DEFAULT_HYPERPARAMETERS = {
-    "n_steps": 2048,
-    "batch_size": 64,
+    "n_steps": 1024,
+    "batch_size": 1024,
     "gamma": 0.99,
     "gae_lambda": 0.95,
     "clip_range_start": 0.2,
