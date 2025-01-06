@@ -1,19 +1,20 @@
-# path: .routes/config_routes.py
+# path: routes/config_routes.py
 
 from flask import Blueprint, jsonify, request
 from pathlib import Path
 import json
 
+
 def create_config_blueprint(training_manager, app_logger):
     """
     Create the config blueprint and integrate the training_manager and logger.
-    
+
     :param training_manager: Global TrainingManager instance to interact with.
     :param app_logger: Global logger instance to be shared across blueprints.
     :return: Config blueprint.
     """
-    # Create a new logger for this blueprint
-    logger = app_logger.__class__("config_routes")  # Create a scoped logger
+    # Create a scoped logger
+    logger = app_logger.__class__("config_routes")
 
     config_blueprint = Blueprint("config_routes", __name__)
 
@@ -25,6 +26,9 @@ def create_config_blueprint(training_manager, app_logger):
     def save_config():
         """Save a configuration."""
         data = request.json
+        if not data:
+            return jsonify({"status": "error", "message": "Invalid request payload."}), 400
+
         config_name = data.get("name")
         config_data = data.get("config")
         overwrite = data.get("overwrite", False)
@@ -39,7 +43,7 @@ def create_config_blueprint(training_manager, app_logger):
         if config_path.exists() and not overwrite:
             return jsonify({
                 "status": "error",
-                "message": f"Configuration '{config_name}' exists. Use 'overwrite=true' to update."
+                "message": f"Configuration '{config_name}' already exists. Use 'overwrite=true' to update it."
             }), 409
 
         try:
@@ -53,6 +57,7 @@ def create_config_blueprint(training_manager, app_logger):
 
     @config_blueprint.route("/load_config/<name>", methods=["GET"])
     def load_config(name):
+        """Load a configuration by name."""
         config_path = CONFIG_DIR / f"{name}.json"
         if not config_path.exists():
             return jsonify({"status": "error", "message": f"Configuration '{name}' not found."}), 404
@@ -60,9 +65,25 @@ def create_config_blueprint(training_manager, app_logger):
         try:
             with config_path.open() as f:
                 config_data = json.load(f)
+
+            # Ensure required wrappers and callbacks are included
+            required_wrappers = [
+                name for name, blueprint in training_manager.wrapper_blueprints.items() if blueprint.is_required()
+            ]
+            required_callbacks = [
+                name for name, blueprint in training_manager.callback_blueprints.items() if blueprint.is_required()
+            ]
+
+            config_data["enabled_wrappers"] = list(set(config_data.get("enabled_wrappers", []) + required_wrappers))
+            config_data["enabled_callbacks"] = list(set(config_data.get("enabled_callbacks", []) + required_callbacks))
+
+            logger.info(f"Configuration '{name}' loaded successfully.")
             return jsonify({"status": "success", "config": config_data})
+        except json.JSONDecodeError:
+            logger.error(f"Invalid JSON format in configuration '{name}'.")
+            return jsonify({"status": "error", "message": f"Configuration '{name}' is corrupted."}), 500
         except Exception as e:
-            logger.error(f"Error loading configuration '{name}': {str(e)}")
+            logger.error(f"Error loading configuration '{name}': {e}")
             return jsonify({"status": "error", "message": f"Failed to load configuration '{name}'."}), 500
 
     @config_blueprint.route("/delete_config/<name>", methods=["DELETE"])
@@ -93,5 +114,31 @@ def create_config_blueprint(training_manager, app_logger):
         except Exception as e:
             logger.error(f"Error listing configurations: {e}")
             return jsonify({"status": "error", "message": "Failed to list configurations."}), 500
+
+    @config_blueprint.route("/load_default_config", methods=["GET"])
+    def load_default_config():
+        """Load the default configuration."""
+        try:
+            default_config = training_manager.get_default_config(
+                wrapper_blueprints=training_manager.wrapper_blueprints,
+                callback_blueprints=training_manager.callback_blueprints,
+            )
+
+            # Ensure required wrappers and callbacks are included
+            required_wrappers = [
+                name for name, blueprint in training_manager.wrapper_blueprints.items() if blueprint.is_required()
+            ]
+            required_callbacks = [
+                name for name, blueprint in training_manager.callback_blueprints.items() if blueprint.is_required()
+            ]
+
+            default_config["enabled_wrappers"] = list(set(default_config.get("enabled_wrappers", []) + required_wrappers))
+            default_config["enabled_callbacks"] = list(set(default_config.get("enabled_callbacks", []) + required_callbacks))
+
+            logger.info("Default configuration loaded successfully.")
+            return jsonify({"status": "success", "config": default_config})
+        except Exception as e:
+            logger.error(f"Error loading default configuration: {e}")
+            return jsonify({"status": "error", "message": "Failed to load default configuration."}), 500
 
     return config_blueprint

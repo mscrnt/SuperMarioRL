@@ -1,5 +1,6 @@
 # path: ./train.py
 
+from gui import DEFAULT_TRAINING_CONFIG, DEFAULT_HYPERPARAMETERS
 from render_manager import RenderManager
 from log_manager import LogManager
 from utils import create_env, linear_schedule, load_blueprints as Blueprint
@@ -23,7 +24,23 @@ class TrainingManager:
         :param config: Configuration for training.
         :param db_manager: Instance of the DBManager for database operations.
         """
-        self.config = config or {}
+        # Load blueprints dynamically
+        self.wrapper_blueprints = self.load_blueprints("app_wrappers")
+        self.callback_blueprints = self.load_blueprints("app_callbacks")
+
+        # Initialize default configuration
+        self.default_config = self.get_default_config(
+            wrapper_blueprints=self.wrapper_blueprints,
+            callback_blueprints=self.callback_blueprints,
+        )
+
+        # Use provided or default configuration
+        self.config = config or self.default_config
+
+        # Initialize active configuration
+        self.active_config = {"config": None, "use_active": False}
+
+        # Other attributes
         self.db_manager = db_manager  # Assign the db_manager
         self.training_active_event = threading.Event()
         self.training_active_event.clear()
@@ -36,6 +53,55 @@ class TrainingManager:
         self.callback_blueprints = {}
         self.callback_instances = []
         self.selected_wrappers = []
+
+    def set_active_config(self, config):
+        """Set the active configuration."""
+        self.active_config = {"config": config, "use_active": True}
+        logger.info("Active configuration updated.")
+
+    def get_active_config(self):
+        """
+        Retrieve the active configuration.
+        If no active configuration exists, return the default.
+        """
+        return self.active_config["config"] if self.active_config["use_active"] else self.default_config
+
+
+    def clear_active_config(self):
+        """Clear the active configuration and reset to default."""
+        self.active_config = {"config": None, "use_active": False}
+        logger.info("Active configuration cleared.")
+
+    def get_effective_config(self):
+        """
+        Determine the effective configuration to use: 
+        active configuration if available, otherwise default.
+        """
+        return self.get_active_config() if self.active_config["use_active"] else self.default_config
+
+
+    @staticmethod
+    def get_default_config(wrapper_blueprints=None, callback_blueprints=None):
+        """Return the default training configuration with required wrappers and callbacks."""
+        # Fallback to empty dictionaries if blueprints are not provided
+        wrapper_blueprints = wrapper_blueprints or {}
+        callback_blueprints = callback_blueprints or {}
+
+        # Identify required wrappers and callbacks
+        required_wrappers = [
+            name for name, blueprint in wrapper_blueprints.items() if blueprint.is_required()
+        ]
+        required_callbacks = [
+            name for name, blueprint in callback_blueprints.items() if blueprint.is_required()
+        ]
+
+        # Return the default configuration with required components
+        return {
+            "training_config": DEFAULT_TRAINING_CONFIG.copy(),
+            "hyperparameters": DEFAULT_HYPERPARAMETERS.copy(),
+            "enabled_wrappers": required_wrappers,
+            "enabled_callbacks": required_callbacks,
+        }
 
     @staticmethod
     def load_blueprints(module_name):
@@ -87,6 +153,9 @@ class TrainingManager:
         logger.debug(f"Loaded wrapper blueprints: {list(self.wrapper_blueprints.keys())}")
         logger.debug(f"Loaded callback blueprints: {list(self.callback_blueprints.keys())}")
 
+        # Load the active configuration
+        self.config = self.get_active_config()
+
         # Merge and parse user configuration
         self._merge_and_parse_config()
 
@@ -107,21 +176,30 @@ class TrainingManager:
     def update_config(self, new_config):
         """Update the training configuration with a new configuration."""
         try:
+            # Ensure self.config contains all necessary keys
+            self.config.setdefault("training_config", {})
+            self.config.setdefault("hyperparameters", {})
+            self.config.setdefault("enabled_wrappers", [])
+            self.config.setdefault("enabled_callbacks", [])
+
+            # Update with new configuration values
             self.config["training_config"].update(new_config.get("training_config", {}))
             self.config["hyperparameters"].update(new_config.get("hyperparameters", {}))
-            self.config["enabled_wrappers"] = new_config.get("enabled_wrappers", [])
-            self.config["enabled_callbacks"] = new_config.get("enabled_callbacks", [])
+            self.config["enabled_wrappers"] = new_config.get("enabled_wrappers", self.config["enabled_wrappers"])
+            self.config["enabled_callbacks"] = new_config.get("enabled_callbacks", self.config["enabled_callbacks"])
+            
             logger.info("Training configuration updated successfully.")
         except Exception as e:
             logger.error("Failed to update configuration", exception=e)
             raise ValueError("Invalid configuration format or data")
+
 
     def _merge_and_parse_config(self):
         """Merge and parse user-provided configurations."""
         default_config = {
             "num_envs": 1,
             "stages": [],
-            "random_stages": True,
+            "random_stages": False,  # Default to False
             "total_timesteps": 32000000,
             "n_steps": 2048,
             "batch_size": 64,
@@ -137,7 +215,7 @@ class TrainingManager:
             "vf_coef": 0.9,
             "ent_coef": 0.01,
             "max_grad_norm": 0.5,
-            "normalize_advantage": True,
+            "normalize_advantage": True,  # Default to True
             "sde_sample_freq": -1,
             "policy_kwargs": {
                 "features_extractor_class": MarioFeatureExtractor,
@@ -152,7 +230,7 @@ class TrainingManager:
         training_config = self.config.get("training_config", {})
         hyperparameters = self.config.get("hyperparameters", {})
 
-        # Preserve enabled wrappers and callbacks
+        # Initialize wrappers and callbacks as empty lists
         enabled_wrappers = self.config.get("enabled_wrappers", [])
         enabled_callbacks = self.config.get("enabled_callbacks", [])
 
@@ -192,9 +270,11 @@ class TrainingManager:
                 float(default_config["clip_range_vf_start"]), float(default_config["clip_range_vf_end"])
             )
 
+        # Preserve wrappers and callbacks
         default_config["enabled_wrappers"] = enabled_wrappers
         default_config["enabled_callbacks"] = enabled_callbacks
         self.config = default_config
+
 
     def _initialize_callbacks_and_wrappers(self):
         """Initialize selected wrappers and callbacks."""
@@ -202,11 +282,16 @@ class TrainingManager:
 
         # Initialize callbacks
         enabled_callbacks = set(self.config.get("enabled_callbacks", []))
+        required_callbacks = {
+            name for name, blueprint in self.callback_blueprints.items() if blueprint.is_required()
+        }
+        enabled_callbacks.update(required_callbacks)  # Ensure required callbacks are always included
+
         logger.info(f"Enabled callbacks from config: {enabled_callbacks}")
         self.callback_instances = []
 
         for name, blueprint in self.callback_blueprints.items():
-            if blueprint.is_required() or name in enabled_callbacks or blueprint.component_class.__name__ in enabled_callbacks:
+            if name in enabled_callbacks or blueprint.is_required():
                 logger.debug(f"Initializing callback: {blueprint.name}")
                 self.callback_instances.append(
                     blueprint.create_instance(config=self.config, training_manager=self)
@@ -219,11 +304,16 @@ class TrainingManager:
 
         # Initialize wrappers
         enabled_wrappers = set(self.config.get("enabled_wrappers", []))
+        required_wrappers = {
+            name for name, blueprint in self.wrapper_blueprints.items() if blueprint.is_required()
+        }
+        enabled_wrappers.update(required_wrappers)  # Ensure required wrappers are always included
+
         logger.info(f"Enabled wrappers from config: {enabled_wrappers}")
         self.selected_wrappers = []
 
         for name, blueprint in self.wrapper_blueprints.items():
-            if blueprint.is_required() or name in enabled_wrappers or blueprint.component_class.__name__ in enabled_wrappers:
+            if name in enabled_wrappers or blueprint.is_required():
                 logger.debug(f"Selecting wrapper: {blueprint.name}")
                 self.selected_wrappers.append(blueprint.name)
             else:
@@ -231,6 +321,7 @@ class TrainingManager:
 
         logger.debug(f"Final selected wrappers: {self.selected_wrappers}")
         logger.debug(f"Final selected callbacks: {[callback.__class__.__name__ for callback in self.callback_instances]}")
+
 
     def _initialize_environments_and_model(self):
         """Initialize the environment and the model."""

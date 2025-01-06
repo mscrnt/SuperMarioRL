@@ -128,29 +128,20 @@ function initializeConfigManager() {
         try {
             const response = await fetch("/config/load_default_config");
             const { config } = await response.json();
-
-            // Populate fields with default values
-            Object.entries(config.hyperparameters || {}).forEach(([key, value]) => {
-                const input = document.querySelector(`[name="hyperparameters[${key}]"]`);
-                if (input) input.value = value;
-            });
-
-            Object.entries(config.training_config || {}).forEach(([key, value]) => {
-                const input = document.querySelector(`[name="training_config[${key}]"]`);
-                if (input) input.value = value;
-            });
-
-            // Clear wrapper and callback checkboxes
-            document.querySelectorAll(".wrapper-checkbox").forEach((checkbox) => (checkbox.checked = false));
-            document.querySelectorAll(".callback-checkbox").forEach((checkbox) => (checkbox.checked = false));
-
-            alert("Default configuration loaded successfully.");
-            isUnsaved = false;
+    
+            if (response.ok) {
+                populateFields(config);
+                alert("Default configuration loaded successfully.");
+            } else {
+                console.error(config.message || "Failed to load default configuration.");
+                alert("Failed to load default configuration.");
+            }
         } catch (error) {
             console.error("Error loading default configuration:", error);
             alert("Failed to load default configuration.");
         }
     }
+    
 
     // Load a selected configuration
     async function loadSelectedConfig() {
@@ -165,32 +156,41 @@ function initializeConfigManager() {
             const response = await fetch(`/config/load_config/${configName}`);
             const { config } = await response.json();
 
-            // Populate fields with selected configuration
-            Object.entries(config.hyperparameters || {}).forEach(([key, value]) => {
-                const input = document.querySelector(`[name="hyperparameters[${key}]"]`);
-                if (input) input.value = value;
-            });
-
-            Object.entries(config.training_config || {}).forEach(([key, value]) => {
-                const input = document.querySelector(`[name="training_config[${key}]"]`);
-                if (input) input.value = value;
-            });
-
-            // Update wrapper and callback checkboxes
-            document.querySelectorAll(".wrapper-checkbox").forEach((checkbox) => {
-                checkbox.checked = config.wrappers.includes(checkbox.dataset.key);
-            });
-
-            document.querySelectorAll(".callback-checkbox").forEach((checkbox) => {
-                checkbox.checked = config.callbacks.includes(checkbox.dataset.key);
-            });
-
-            alert(`Configuration '${configName}' loaded successfully.`);
-            isUnsaved = false;
+            if (response.ok) {
+                populateFields(config);
+                alert(`Configuration '${configName}' loaded successfully.`);
+            } else {
+                console.error(config.message || "Failed to load configuration.");
+                alert("Failed to load configuration.");
+            }
         } catch (error) {
             console.error("Error loading configuration:", error);
             alert("Failed to load configuration.");
         }
+    }
+
+    // Populate the fields with the configuration data
+    function populateFields(config) {
+        // Populate training config fields
+        Object.entries(config.training_config || {}).forEach(([key, value]) => {
+            const input = document.querySelector(`[name="training_config[${key}]"]`);
+            if (input) input.value = value !== undefined && value !== null ? value : "";
+        });
+
+        // Populate hyperparameters fields
+        Object.entries(config.hyperparameters || {}).forEach(([key, value]) => {
+            const input = document.querySelector(`[name="hyperparameters[${key}]"]`);
+            if (input) input.value = value !== undefined && value !== null ? value : "";
+        });
+
+        // Populate wrapper and callback checkboxes
+        document.querySelectorAll(".wrapper-checkbox").forEach((checkbox) => {
+            checkbox.checked = config.enabled_wrappers.includes(checkbox.value) || checkbox.hasAttribute("disabled");
+        });
+
+        document.querySelectorAll(".callback-checkbox").forEach((checkbox) => {
+            checkbox.checked = config.enabled_callbacks.includes(checkbox.value) || checkbox.hasAttribute("disabled");
+        });
     }
 
     // Save the current configuration

@@ -1,3 +1,5 @@
+// path: app/static/js/index.js
+
 // Initialize header controls for training and rendering
 function initializeHeaderControls() {
     const startButton = document.getElementById("start-training");
@@ -102,8 +104,7 @@ function initializeHeaderControls() {
     })();
 }
 
-// Dynamically load content and initialize
-async function loadDynamicContent(url, onLoad) {
+async function loadDynamicContent(url, onLoad, resetToDefault = false) {
     const contentContainer = document.getElementById("dynamic-content");
     if (!contentContainer) {
         console.error("Content container not found.");
@@ -115,16 +116,19 @@ async function loadDynamicContent(url, onLoad) {
         if (response.ok) {
             contentContainer.innerHTML = await response.text();
 
+            // Reset configuration to default if specified
+            if (resetToDefault) {
+                await resetToDefaultConfig();
+            } else {
+                await loadCurrentConfig(); // Always load the active config
+            }
+
             // Execute callback after content loads
             if (typeof onLoad === "function") onLoad();
 
             // Call listeners conditionally based on the loaded URL
             if (url.includes("/dashboard/training") && typeof initializeListenersForTrainingDashboard === "function") {
                 initializeListenersForTrainingDashboard();
-            } else if (url.includes("/tensorboard")) {
-                console.log("TensorBoard content loaded.");
-            } else {
-                console.warn("No specific listeners defined for this page.");
             }
         } else {
             contentContainer.innerHTML = "<p>Error loading content. Please try again later.</p>";
@@ -132,6 +136,20 @@ async function loadDynamicContent(url, onLoad) {
     } catch (error) {
         console.error("Failed to load content:", error);
         contentContainer.innerHTML = "<p>Error loading content. Please check your connection.</p>";
+    }
+}
+
+async function resetToDefaultConfig() {
+    try {
+        const response = await fetch("/training/reset_to_default", { method: "POST" });
+        const result = await response.json();
+        if (response.ok) {
+            console.log(result.message || "Configuration reset to default.");
+        } else {
+            console.error("Error resetting configuration:", result.message);
+        }
+    } catch (error) {
+        console.error("Error resetting to default configuration:", error);
     }
 }
 
@@ -168,9 +186,11 @@ function collectTrainingConfig() {
 
 document.addEventListener("DOMContentLoaded", async () => {
     initializeHeaderControls(); // Set up header controls
+    loadCurrentConfig();
+
 
     // Automatically load the Training Dashboard on initial load
-    await loadDynamicContent("/dashboard/training", initializeHeaderControls);
+    await loadDynamicContent("/dashboard/training", initializeHeaderControls, false);
 
     // Add event listener for the TensorBoard link
     const tensorboardLink = document.getElementById("tensorboard-link");
@@ -188,7 +208,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (trainingLink) {
         trainingLink.addEventListener("click", async (event) => {
             event.preventDefault();
-            await loadDynamicContent("/dashboard/training", initializeHeaderControls);
+            await loadDynamicContent("/dashboard/training", initializeHeaderControls, false);
         });
     } else {
         console.error("Training Dashboard link not found.");
@@ -204,4 +224,51 @@ if (metricsLink) {
     });
 } else {
     console.error("Metrics Dashboard link not found.");
+}
+
+async function loadCurrentConfig() {
+    try {
+        const response = await fetch("/training/current_config");
+        const { config } = await response.json();
+
+        if (!config) {
+            console.warn("No active configuration found.");
+            return;
+        }
+
+        // Populate training config fields
+        Object.entries(config.training_config || {}).forEach(([key, value]) => {
+            const input = document.querySelector(`[name="training_config[${key}]"]`);
+            if (input) {
+                input.value = value !== undefined && value !== null ? value : "";
+            }
+        });
+
+        // Populate hyperparameters fields
+        Object.entries(config.hyperparameters || {}).forEach(([key, value]) => {
+            const input = document.querySelector(`[name="hyperparameters[${key}]"]`);
+            if (input) {
+                input.value = value !== undefined && value !== null ? value : "";
+            }
+        });
+
+        // Set default for normalize_advantage if missing
+        const normalizeAdvantage = document.querySelector(`[name="hyperparameters[normalize_advantage]"]`);
+        if (normalizeAdvantage && !normalizeAdvantage.value) {
+            normalizeAdvantage.value = "True";
+        }
+
+        // Set wrapper and callback checkboxes
+        document.querySelectorAll(".wrapper-checkbox").forEach((checkbox) => {
+            checkbox.checked = config.enabled_wrappers.includes(checkbox.value) || checkbox.hasAttribute("disabled");
+        });
+
+        document.querySelectorAll(".callback-checkbox").forEach((checkbox) => {
+            checkbox.checked = config.enabled_callbacks.includes(checkbox.value) || checkbox.hasAttribute("disabled");
+        });
+
+        console.log("Active configuration loaded successfully.");
+    } catch (error) {
+        console.error("Error loading current configuration:", error);
+    }
 }
