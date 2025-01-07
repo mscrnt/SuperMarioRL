@@ -2,14 +2,67 @@
 
 import torch
 from log_manager import LogManager
-from utils import render_frame_to_queue, clear_frame_queue
 import threading
 import time
 from copy import deepcopy
+import queue
+import cv2
+import numpy as np
+
+
 
 # Initialize a logger specific to this module
 logger = LogManager("RenderMan")
 
+frame_queue = queue.Queue(maxsize=50)
+
+
+def clear_frame_queue():
+    """
+    Clears all frames from the frame queue.
+    """
+    discarded_frames = 0
+    while not frame_queue.empty():
+        frame_queue.get_nowait()
+        discarded_frames += 1
+    logger.info("Frame queue cleared", discarded_frames=discarded_frames)
+
+
+def render_frame_to_queue(first_env, throttle_interval=0.05):
+    """
+    Render a frame and place it in the frame queue for streaming.
+
+    :param first_env: The environment to render frames from.
+    :param throttle_interval: Interval between frame captures.
+    """
+    try:
+        frame = first_env.render(mode="rgb_array")
+        if frame_queue.full():
+            discarded_frame = frame_queue.get_nowait()
+            logger.debug("Discarded oldest frame due to queue overflow", frame=discarded_frame)
+        frame_queue.put(frame, block=False)
+        time.sleep(throttle_interval)
+    except Exception as e:
+        logger.error("Rendering failed", exception=e)
+
+
+def generate_frame_stream(frame_rate=120):
+    """
+    Generator function to stream frames as MJPEG.
+
+    :param frame_rate: Target frame rate for the stream.
+    :return: Generator yielding MJPEG frames.
+    """
+    interval = 1.0 / frame_rate
+    while True:
+        try:
+            frame = frame_queue.get()
+            _, buffer = cv2.imencode('.jpg', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+            yield (b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+            time.sleep(interval)
+        except Exception as e:
+            logger.error("Error generating frame stream", exception=e)
 
 class RenderManager:
     """
@@ -36,6 +89,7 @@ class RenderManager:
         except Exception as e:
             logger.error("Failed to initialize cached policy during RenderManager initialization.", exception=e)
             raise
+
 
     def _cache_policy(self):
         """Update the cached policy with a thread-safe copy."""
