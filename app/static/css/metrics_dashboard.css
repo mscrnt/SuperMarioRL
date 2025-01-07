@@ -98,3 +98,39 @@
     flex-wrap: nowrap;
     align-items: center;
 }
+
+/* Center cell CRT frame container */
+.crt-frame-container {
+    position: relative;
+    width: 100%; /* Allows it to scale based on the grid cell */
+    padding-top: calc(474.8 / 632 * 100%); /* Aspect ratio = (height / width) * 100 */
+    overflow: hidden;
+}
+
+
+/* CRT frame styling */
+.crt-frame {
+    position: absolute;
+    top: 125px;
+    left: 13%;
+    width: 75%;
+    height: 66%;
+    z-index: 1;
+}
+/* Video container inside the CRT frame */
+.crt-video-container {
+    position: absolute;
+    top: 22%;
+    left: 18%;
+    width: 51%;
+    height: 56%;
+    z-index: 0;
+    overflow: hidden;
+}
+
+/* Video elements */
+.crt-video-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensures the video fits without distortion */
+}

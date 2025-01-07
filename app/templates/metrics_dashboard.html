@@ -45,9 +45,12 @@
 
         <!-- Game Render (Center Anchor) -->
         <div class="grid-item" id="cell-5">
-            <div class="video-container">
-                <img id="video-placeholder" src="{{ url_for('static', filename='favicon.ico') }}" alt="Game Render Placeholder">
-                <img id="video-feed" src="/stream/video_feed" alt="Game Render" style="display: none;">
+            <div class="crt-frame-container">
+                <img class="crt-frame" src="{{ url_for('static', filename='crt_frame.png') }}" alt="CRT Frame">
+                <div class="crt-video-container">
+                    <img id="video-placeholder" src="{{ url_for('static', filename='favicon.ico') }}" alt="Game Render Placeholder">
+                    <img id="video-feed" src="/stream/video_feed" alt="Game Render" style="display: none;">
+                </div>
             </div>
         </div>
 
