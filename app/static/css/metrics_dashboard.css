@@ -121,16 +121,17 @@
 .crt-video-container {
     position: absolute;
     top: 22%;
-    left: 18%;
+    left: 0;
     width: 51%;
     height: 56%;
     z-index: 0;
     overflow: hidden;
+    display: flex;
+    justify-content: center;
+    min-width: 87%;
 }
 
 /* Video elements */
 .crt-video-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* Ensures the video fits without distortion */
+    width: 32rem;
 }
