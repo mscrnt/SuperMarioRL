@@ -115,7 +115,6 @@ def create_dashboard_blueprint(training_manager, app_logger, DBManager):
                     else:
                         cursor.execute(f"SELECT COUNT(*) FROM mario_env_stats WHERE additional_info ? '{stat}';")
                     key_count = cursor.fetchone()[0]
-                    app_logger.info(f"Key '{stat}' exists in {key_count} rows.")
 
                     if key_count == 0:
                         app_logger.warning(f"Key '{stat}' does not exist in any rows. Skipping.")
@@ -144,7 +143,6 @@ def create_dashboard_blueprint(training_manager, app_logger, DBManager):
                     data["trainingStats"][stat] = {row[0]: row[1] for row in training_data}
 
             DBManager.release_connection(conn)
-            app_logger.info(f"Metrics Data Sent: {len(data['env0Stats'])} env0Stats keys and {len(data['trainingStats'])} trainingStats keys.")
             return jsonify(data)
 
         except Exception as e:
