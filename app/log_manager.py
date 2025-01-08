@@ -11,38 +11,107 @@ from concurrent_log_handler import ConcurrentRotatingFileHandler
 import logging
 from datetime import datetime
 import re
+from colorsys import hsv_to_rgb
+
 
 colorama.init(autoreset=True)
 
 # Shared queue for UI logging
 log_queue = Queue()
 
-# Assign unique colors for loggers
-COLOR_MAP = {}
-COLORS = [
-    Fore.GREEN,
-    Fore.YELLOW,
-    Fore.CYAN,
-    Fore.MAGENTA,
-    Fore.BLUE,
-    Fore.RED,
-    Fore.WHITE,
-    Fore.LIGHTGREEN_EX,
-    Fore.LIGHTYELLOW_EX,
-    Fore.LIGHTCYAN_EX,
-    Fore.LIGHTMAGENTA_EX,
-    Fore.LIGHTBLUE_EX,
-    Fore.LIGHTWHITE_EX,
+# Mario's palette as starting RGB tuples
+MARIO_PALETTE_RGB = [
+    (255, 0, 0),  # Red (used for errors only)
+    (255, 165, 0),  # Safety cone orange
+    (0, 128, 0),  # Green
+    (0, 0, 255),  # Blue
+    (0, 255, 255),  # Cyan
+    (128, 0, 128),  # Purple
+    (255, 255, 255),  # White
 ]
+
+# Used colors tracker
+used_colors = {
+    "reserved_error_1": f"\033[38;2;255;0;0m",  # Red
+    "reserved_error_2": f"\033[38;2;139;0;0m",  # Dark Red
+    "reserved_error_3": f"\033[38;2;255;69;0m",  # Orange Red
+}
+
+def rgb_to_colorama(rgb):
+    """Convert an RGB tuple to a Colorama Foreground color."""
+    return f"\033[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m"
+
+def generate_next_color(hue_start=0.0, saturation=1.0, value=1.0, step=0.15):
+    """
+    Generate a new color in the HSV space by rotating the hue.
+    :param hue_start: Starting hue (0-1).
+    :param saturation: Saturation (0-1).
+    :param value: Value (brightness) (0-1).
+    :param step: Increment for the hue.
+    :return: RGB tuple.
+    """
+    hue = hue_start
+    iteration = 0
+    while True:
+        rgb = tuple(int(c * 255) for c in hsv_to_rgb(hue, saturation, value))
+        hue = (hue + step) % 1.0  # Rotate hue
+        iteration += 1
+
+        yield rgb
+
+
+# Create a generator for new colors
+color_generator = generate_next_color(hue_start=0.7, step=0.1)
+
+# Initialize the set with reserved colors
+used_colors_set = set(used_colors.values())
+
+PRELOADED_COLORS = [rgb_to_colorama(next(color_generator)) for _ in range(500)]
 
 
 def assign_color(name):
     """
-    Assign a unique color to each logger based on its name.
+    Dynamically assign a unique color, starting with Mario's palette.
+    :param name: The name of the logger requesting a color.
     """
-    if name not in COLOR_MAP:
-        COLOR_MAP[name] = COLORS[len(COLOR_MAP) % len(COLORS)]
-    return COLOR_MAP[name]
+
+    if name not in used_colors:
+        # Try to assign from Mario's palette
+        while MARIO_PALETTE_RGB:
+            rgb_color = MARIO_PALETTE_RGB.pop(0)
+            color_code = rgb_to_colorama(rgb_color)
+
+            if color_code not in used_colors_set:
+                used_colors[name] = color_code
+                used_colors_set.add(color_code)
+                return color_code
+
+        # Use preloaded colors before dynamic generation
+        if PRELOADED_COLORS:
+            color_code = PRELOADED_COLORS.pop(0)
+            used_colors[name] = color_code
+            used_colors_set.add(color_code)
+            return color_code
+
+
+
+        max_attempts = 100
+        attempts = 0
+        while attempts < max_attempts:
+            rgb_color = next(color_generator)
+            color_code = rgb_to_colorama(rgb_color)
+
+
+            if color_code not in used_colors_set:
+                used_colors[name] = color_code
+                used_colors_set.add(color_code)
+                return color_code
+            attempts += 1
+
+        raise RuntimeError("Color assignment failed due to too many attempts.")
+    
+    return used_colors[name]
+
 
 
 def strip_ansi_escape_sequences(message):
@@ -52,14 +121,12 @@ def strip_ansi_escape_sequences(message):
     ansi_escape = re.compile(r'(?:\x1B[@-_]|[\x9B\x1B][\[()#;?]*[ -/]*[@-~])')
     return ansi_escape.sub("", message)
 
-
 def send_to_ui_log(message):
     """
     Send clean logs to the shared queue for the UI.
     """
     clean_message = strip_ansi_escape_sequences(message)
     log_queue.put(clean_message)
-
 
 def configure_ic_logger(name, color):
     """
@@ -71,7 +138,6 @@ def configure_ic_logger(name, color):
 
     ic.configureOutput(prefix=custom_prefix, includeContext=True)
     return ic
-
 
 class LogManager:
     """
@@ -98,15 +164,16 @@ class LogManager:
             frame = inspect.currentframe().f_back
             name = os.path.basename(frame.f_code.co_filename).replace(".py", "")
         self.name = name
-        self.color = assign_color(name)
 
         # Set up logger
         self.logger = logging.getLogger(self.name)
         self.logger.setLevel(logging.DEBUG)  # Capture all log levels
         self._setup_handlers()
 
-        # Configure IceCream for this logger
+        # Assign color
+        self.color = assign_color(name)
         self.ic = configure_ic_logger(self.name, self.color)
+
         self.logger.debug(f"Logger initialized for {self.name}")
 
     def _setup_handlers(self):
@@ -166,8 +233,8 @@ class LogManager:
         color_map = {
             "DEBUG": Fore.CYAN,
             "INFO": Fore.GREEN,
-            "WARNING": Fore.YELLOW,
-            "ERROR": Fore.RED,
+            "WARNING": Fore.LIGHTYELLOW_EX,  # Safety cone orange
+            "ERROR": Fore.RED,  # Red only for errors
         }
         return color_map.get(levelname, Fore.WHITE)
 
