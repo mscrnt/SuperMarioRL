@@ -26,9 +26,9 @@ def clear_frame_queue():
     logger.info("Frame queue cleared", discarded_frames=discarded_frames)
 
 
-def apply_crt_shader(frame, time, rolling_interval=3):  # Less frequent with increased interval
+def apply_crt_shader(frame, time, rolling_interval=3):
     """
-    Apply a CRT-like shader effect with radial distortion, scanlines, dot mask, and rolling lines.
+    Apply a CRT-like shader effect with radial distortion, scanlines, RCA-style dot mask, and rolling lines.
     """
     height, width, _ = frame.shape
 
@@ -37,7 +37,6 @@ def apply_crt_shader(frame, time, rolling_interval=3):  # Less frequent with inc
 
     # Step 2: Apply radial distortion
     distortion = 0.2
-    center_x, center_y = width / 2, height / 2
     x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
     x_centered, y_centered = x - 0.5, y - 0.5
     radial_dist = x_centered**2 + y_centered**2
@@ -54,22 +53,30 @@ def apply_crt_shader(frame, time, rolling_interval=3):  # Less frequent with inc
     scanline_overlay = np.repeat(scanline_overlay, width, axis=1).reshape(height, width, 1)
     frame_with_scanlines = frame_distorted * scanline_overlay
 
-    # Step 4: Improved dot-mask simulation
-    mod_factor = np.arange(width) % 3
-    dot_mask_weights = np.zeros((1, width, 3), dtype=np.float32)
-    dot_mask_weights[:, mod_factor == 0, 0] = 1.05  # Red
-    dot_mask_weights[:, mod_factor == 1, 1] = 1.05  # Green
-    dot_mask_weights[:, mod_factor == 2, 2] = 1.05  # Blue
-    dot_mask_weights[:, :, :] = np.where(dot_mask_weights == 0, 0.8, dot_mask_weights)
-    dot_mask_weights = np.tile(dot_mask_weights, (height, 1, 1))
-    frame_with_dot_mask = frame_with_scanlines * dot_mask_weights
+    # Step 4: RCA-style shadow mask
+    mask_dark = 0.8  # Increased the base brightness
+    mask_light = 1.1  # Reduced the contrast between dark and light
+    dot_mask = np.ones((height, width, 3), dtype=np.float32) * mask_dark
+
+    for i in range(height):
+        for j in range(width):
+            # Alternating subpixel emphasis
+            if (j % 3 == 0):
+                dot_mask[i, j, 0] = mask_light  # Red
+            elif (j % 3 == 1):
+                dot_mask[i, j, 1] = mask_light  # Green
+            elif (j % 3 == 2):
+                dot_mask[i, j, 2] = mask_light  # Blue
+
+    frame_with_dot_mask = frame_with_scanlines * dot_mask
+
 
     # Step 5: Add rolling lines (hum bars) effect
     if int(time) % rolling_interval == 0:  # Less frequent based on rolling_interval
         rolling_amplitude = 0.02  # Subtle effect
         rolling_frequency = 2  # Slower bars
         rolling_lines = (
-            np.sin(2 * np.pi * rolling_frequency * (y + (time % 1))) * rolling_amplitude + 1.0
+            np.sin(2 * np.pi * rolling_frequency * (y + ((time / 2) % 1))) * rolling_amplitude + 1.0
         )
         rolling_lines = rolling_lines.reshape(height, width, 1)  # Match frame dimensions
         frame_with_rolling_lines = frame_with_dot_mask * rolling_lines
@@ -85,7 +92,6 @@ def apply_crt_shader(frame, time, rolling_interval=3):  # Less frequent with inc
     frame_output = (frame_gamma_corrected * 255).astype(np.uint8)
 
     return frame_output
-
 
 
 def render_frame_to_queue(frame):
