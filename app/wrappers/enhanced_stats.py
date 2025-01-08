@@ -40,6 +40,7 @@ class EnhancedStatsWrapper(gym.Wrapper):
         # Track the player's lives
         self.previous_life = self._get_life()
 
+
     def _load_ram_mapping(self, json_path):
         """Load RAM state mapping from a JSON file."""
         try:
@@ -168,7 +169,7 @@ class EnhancedStatsWrapper(gym.Wrapper):
             "coins": coins_this_step,
             "score": self._get_ram_value(int("0x0117", 16)),
             "x_pos": self._get_ram_value(int("0x071C", 16)),
-            "time": self._get_ram_value(int("0x0747", 16)),
+            "time": info.get("time", getattr(self.env.unwrapped, "_time", 0)),
             "enemy_kills": kills_this_step,
             "deaths": self.episode_deaths,
             "flag_get": bool(self._get_ram_value(int("0x001D", 16)) == 3),
@@ -203,4 +204,5 @@ class EnhancedStatsWrapper(gym.Wrapper):
         self.episode_deaths = 0
         self.episode_coins = 0
         self.previous_life = self._get_life()  # Reset life tracking
+        self.game_timer = 400
         return {"frame": obs, "stats": np.zeros(15, dtype=np.float32)}
