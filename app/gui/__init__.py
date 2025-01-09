@@ -2,15 +2,15 @@
 
 # Default hyperparameters
 DEFAULT_HYPERPARAMETERS = {
-    "n_steps": 1024,
-    "batch_size": 1024,
-    "gamma": 0.99,
+    "n_steps": 256,
+    "batch_size": 256,
+    "gamma": 0.94,
     "gae_lambda": 0.95,
     "clip_range_start": 0.15,
-    "clip_range_end": 0.1,
-    "learning_rate_start": 0.0002,
-    "learning_rate_end": 0.00005,
-    "n_epochs": 10,
+    "clip_range_end": 0.025,
+    "learning_rate_start": 0.00025,
+    "learning_rate_end": 0.0000025,
+    "n_epochs": 4,
     "vf_coef": 0.9,
     "ent_coef": 0.01,
     "max_grad_norm": 0.5,
@@ -23,7 +23,7 @@ DEFAULT_HYPERPARAMETERS = {
     "clip_range_vf_end": None,
     "target_kl": None,
 }
-
+ 
 # Default paths
 DEFAULT_PATHS = {
     "log_dir": "./logs",
