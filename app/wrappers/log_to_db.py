@@ -33,7 +33,7 @@ class LoggingStatsWrapper(gym.Wrapper):
         Resets the environment and prepares for a new episode.
         """
         self.episode_count += 1
-        self.logger.info(f"Resetting environment for episode {self.episode_count}")
+        self.logger.debug(f"Resetting environment for episode {self.episode_count}")
 
         # Reset counters
         self.step_count = 0
