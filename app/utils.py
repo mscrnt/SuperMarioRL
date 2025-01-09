@@ -169,7 +169,7 @@ def linear_schedule(initial_value, final_value=0.0):
 
     def func(progress):
         value = final_value + progress * (initial_value - final_value)
-        logger.debug("Linear schedule computed", initial=initial_value, final=final_value, progress=progress, value=value)
+        # logger.debug("Linear schedule computed", initial=initial_value, final=final_value, progress=progress, value=value)
         return value
 
     return func

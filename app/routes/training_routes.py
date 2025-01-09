@@ -3,6 +3,9 @@
 from flask import Blueprint, request, jsonify
 import threading
 
+enable_crt_shader = False
+
+
 def create_training_blueprint(training_manager, app_logger, db_manager):
     """
     Create the training blueprint and integrate the training_manager, logger, and db_manager.
@@ -103,7 +106,7 @@ def create_training_blueprint(training_manager, app_logger, db_manager):
                 logger.error(f"Error stopping training: {e}")
                 return jsonify({"status": "error", "message": f"Failed to stop training: {str(e)}"})
 
-    @training_blueprint.route("/training_status", methods=["GET"])
+    @training_blueprint.route("/training_status", methods=["GET"]) 
     def training_status():
         """Return the current training status."""
         with training_lock:
@@ -112,7 +115,7 @@ def create_training_blueprint(training_manager, app_logger, db_manager):
                 logger.debug(f"Training status checked: active={training_active}")
                 return jsonify({"training": training_active})
             except Exception as e:
-                logger.error(f"Error checking training status: {e}")
+                logger.error(f"Error checking training status: {e}") 
                 return jsonify({"status": "error", "message": "Failed to check training status."}), 500
 
     @training_blueprint.route("/render_status", methods=["GET"])
@@ -126,6 +129,20 @@ def create_training_blueprint(training_manager, app_logger, db_manager):
             except Exception as e:
                 logger.error(f"Error checking render status: {e}")
                 return jsonify({"status": "error", "message": "Failed to check rendering status."}), 500
+            
+    @training_blueprint.route('/toggle_crt_shader', methods=['POST'])
+    def toggle_crt_shader():
+        """Toggle the CRT shader."""
+        data = request.json
+        enable_shader = data.get('enable_shader', False)
+
+        try:
+            training_manager.toggle_crt_shader(enable_shader)
+            logger.info(f"CRT shader toggled: {'enabled' if enable_shader else 'disabled'}")
+            return jsonify(success=True)
+        except Exception as e:
+            logger.error(f"Error toggling CRT shader: {e}")
+            return jsonify(success=False, error=str(e)), 500
 
     @training_blueprint.route("/model_status", methods=["GET"])
     def model_status():

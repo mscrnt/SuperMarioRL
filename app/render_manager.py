@@ -26,10 +26,15 @@ def clear_frame_queue():
     logger.info("Frame queue cleared", discarded_frames=discarded_frames)
 
 
-def apply_crt_shader(frame, time, rolling_interval=3):
+def apply_crt_shader(frame, time, rolling_interval=3, crt_shader_enabled=False):
     """
     Apply a CRT-like shader effect with radial distortion, scanlines, RCA-style dot mask, and rolling lines.
     """
+
+    if not crt_shader_enabled:
+        logger.info("CRT shader effect disabled.")
+        return frame
+
     height, width, _ = frame.shape
 
     # Step 1: Normalize the frame to [0, 1] for processing
@@ -94,52 +99,58 @@ def apply_crt_shader(frame, time, rolling_interval=3):
     return frame_output
 
 
-def render_frame_to_queue(frame):
+def render_frame_to_queue(frame, crt_shader_enabled):
     """
     Render a frame, apply shader effects, and place it in the frame queue.
 
     :param frame: The rendered frame (as a NumPy array).
+    :param crt_shader_enabled: Whether to apply the CRT shader effect.
     """
     try:
-        # Apply CRT shader effects
         current_time = time.time()
-        processed_frame = apply_crt_shader(frame, current_time, rolling_interval=1)
+        processed_frame = apply_crt_shader(
+            frame, current_time, rolling_interval=1, crt_shader_enabled=crt_shader_enabled
+        )
 
-        # Manage the frame queue
         if frame_queue.full():
-            discarded_frame = frame_queue.get_nowait()
-            logger.debug("Discarded oldest frame due to queue overflow", discarded_frame=discarded_frame)
+            discarded_frame = frame_queue.get_nowait()  # Discard the oldest frame
+            logger.debug("Discarded oldest frame to make room in queue.", discarded_frame=discarded_frame)
 
-        frame_queue.put(processed_frame, block=False)
+        frame_queue.put_nowait(processed_frame)
+        logger.debug("Frame added to queue successfully.")
+    except queue.Full:
+        logger.warning("Frame queue is full; skipping frame.")
     except Exception as e:
         logger.error("Rendering failed", exception=e)
+
+
 
 
 
 def generate_frame_stream(frame_rate=120):
     """
     Generator function to stream frames as MJPEG.
-
-    :param frame_rate: Target frame rate for the stream.
-    :return: Generator yielding MJPEG frames.
     """
     interval = 1.0 / frame_rate
     while True:
         try:
-            frame = frame_queue.get()
+            frame = frame_queue.get(timeout=1)  # Avoid indefinite blocking
             _, buffer = cv2.imencode('.jpg', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
             time.sleep(interval)
+        except queue.Empty:
+            logger.warning("Frame queue is empty; waiting for new frames.")
         except Exception as e:
-            logger.error("Error generating frame stream", exception=e)
+            logger.error("Error generating frame stream.", exception=e)
+
 
 
 class RenderManager:
     """
     Manages rendering in a separate thread to ensure it does not block training.
     """
-    def __init__(self, render_env, model, cache_update_interval=120, training_active_flag=None, model_updated_flag=None):
+    def __init__(self, render_env, model, cache_update_interval=120, training_active_flag=None, model_updated_flag=None, crt_shader_flag=None):
         if render_env is None or model is None:
             raise ValueError("Both 'render_env' and 'model' must be provided to initialize RenderManager.")
 
@@ -151,6 +162,7 @@ class RenderManager:
         self.render_thread = None
         self.obs = None
         self.training_active_flag = training_active_flag or (lambda: True)
+        self.crt_shader_flag = crt_shader_flag or (lambda: False)  # Default to CRT shader disabled
         self.model_updated_flag = model_updated_flag or threading.Event()
         self.rendering_active = threading.Event()
 
@@ -172,25 +184,19 @@ class RenderManager:
 
     def _render_loop(self, target_render_fps=60, logic_fps=12):
         """
-        Rendering loop with fine-tuned interpolation and frame padding for smoother gameplay.
-        
-        :param target_render_fps: The target FPS for rendering (e.g., 60).
-        :param logic_fps: The target FPS for game logic updates (e.g., 24).
+        Rendering loop with separate timing for logic updates and frame rendering.
         """
         try:
             self.obs = self.render_env.reset()
             self.rendering_active.set()
             logger.info("Rendering thread started successfully.")
 
-            # Calculate intervals for rendering and logic
             render_interval = 1 / target_render_fps
             logic_interval = 1 / logic_fps
 
-            # Time tracking for logic and rendering
             last_render_time = time.time()
             last_logic_time = last_render_time
 
-            # Store the last two logic frames for interpolation
             last_logic_frame = self.render_env.render(mode="rgb_array")
             current_logic_frame = last_logic_frame
 
@@ -205,74 +211,46 @@ class RenderManager:
 
                 current_time = time.time()
 
-                # Update game logic if enough time has passed
-                while current_time - last_logic_time >= logic_interval:
+                # Update game logic
+                if current_time - last_logic_time >= logic_interval:
                     try:
                         with torch.no_grad():
                             action, _ = self.cached_policy.predict(self.obs, deterministic=True)
-                        self.obs, _, done, info = self.render_env.step(action)
+                        self.obs, _, done, _ = self.render_env.step(action)
 
-                        # Shift logic frames for interpolation
                         last_logic_frame = current_logic_frame
                         current_logic_frame = self.render_env.render(mode="rgb_array")
-
-                        # Extract the game timer from `stats`
-                        game_timer = info.get("stats", {}).get("time", 0)
-                        logger.debug(
-                            f"Logic updated | Game Timer Countdown: {game_timer}",
-                            elapsed_time=current_time - last_logic_time,
-                            logic_interval=logic_interval,
-                            current_time=current_time,
-                            last_logic_time=last_logic_time
-                        )
-                        last_logic_time += logic_interval  # Use fixed intervals for consistency
 
                         if done:
                             self.obs = self.render_env.reset()
                     except Exception as e:
                         logger.error("Error during logic update.", exception=e)
 
-                # Render a frame if enough time has passed
+                    last_logic_time = current_time
+
+                # Render a frame
                 if current_time - last_render_time >= render_interval:
                     try:
-                        # Interpolate or duplicate the logic frames
-                        time_since_last_logic = current_time - last_logic_time
-                        alpha = max(0.0, min(1.0, time_since_last_logic / logic_interval))
+                        alpha = (current_time - last_logic_time) / logic_interval
+                        alpha = max(0.0, min(1.0, alpha))
 
-                        # Use the last frame if logic hasn't updated
                         interpolated_frame = self._interpolate_frames(
                             last_logic_frame, current_logic_frame, alpha
                         )
 
-                        # Render the interpolated frame
-                        render_frame_to_queue(interpolated_frame)
-                        logger.debug(
-                            "Frame rendered",
-                            elapsed_time=current_time - last_render_time,
-                            render_interval=render_interval,
-                            current_time=current_time,
-                            last_render_time=last_render_time,
-                            alpha=alpha
-                        )
-                        last_render_time = current_time
+                        crt_shader_enabled = self.crt_shader_flag()
+                        render_frame_to_queue(interpolated_frame, crt_shader_enabled)
                     except Exception as e:
                         logger.error("Error during frame rendering.", exception=e)
 
-                # Sleep for the remaining time in the shortest interval
-                next_event_time = min(
-                    last_logic_time + logic_interval,
-                    last_render_time + render_interval,
-                )
-                sleep_time = max(0, next_event_time - time.time())
-                time.sleep(sleep_time)
+                    last_render_time = current_time
 
+                time.sleep(0.001)  # Prevent busy-waiting
         except Exception as e:
-            logger.error("Failed to initialize rendering loop.", exception=e)
+            logger.error("Rendering loop failed.", exception=e)
         finally:
             self.rendering_active.clear()
-            logger.info("Rendering thread has stopped.")
-
-
+            logger.info("Rendering thread stopped.")
 
     def _interpolate_frames(self, frame1, frame2, alpha):
         """

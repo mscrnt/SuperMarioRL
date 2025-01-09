@@ -53,6 +53,16 @@ class TrainingManager:
         self.callback_blueprints = {}
         self.callback_instances = []
         self.selected_wrappers = []
+        self.enable_crt_shader = False
+
+    def toggle_crt_shader(self, enable: bool):
+        """Toggle the CRT shader state."""
+        self.enable_crt_shader = enable
+        logger.info(f"CRT shader {'enabled' if enable else 'disabled'}.")
+
+    def is_crt_shader_enabled(self) -> bool:
+        """Check if the CRT shader is enabled."""
+        return self.enable_crt_shader
 
     def set_active_config(self, config):
         """Set the active configuration."""
@@ -171,6 +181,7 @@ class TrainingManager:
             model=self.model,
             training_active_flag=self.is_training_active,
             model_updated_flag=self.model_updated_flag,
+            crt_shader_flag=lambda: self.enable_crt_shader  # Dynamically fetch current state
         )
 
     def update_config(self, new_config):

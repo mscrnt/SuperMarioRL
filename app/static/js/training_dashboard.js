@@ -499,6 +499,51 @@ function toggleStagesTextbox() {
 }
 
 
+async function initializeCrtShaderToggle() {
+    const toggle = document.getElementById("shader-toggle"); // Updated to match the HTML id
+
+    if (!toggle) {
+        console.error("CRT shader toggle element not found.");
+        return;
+    }
+
+    // Fetch initial state from the server (optional, to sync UI)
+    try {
+        const response = await fetch("/training/render_status"); // Replace with an endpoint that can check the shader state
+        const { crt_shader_enabled } = await response.json();
+        toggle.checked = crt_shader_enabled || false;
+    } catch (error) {
+        console.error("Error fetching initial CRT shader state:", error);
+    }
+
+    // Attach change listener to the toggle switch
+    toggle.addEventListener("change", async () => {
+        const enableShader = toggle.checked;
+
+        try {
+            const response = await fetch("/training/toggle_crt_shader", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ enable_shader: enableShader }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                console.log(`CRT Shader toggled: ${enableShader ? "enabled" : "disabled"}`);
+            } else {
+                console.error("Failed to toggle CRT shader.");
+                toggle.checked = !enableShader; // Revert toggle on failure
+            }
+        } catch (error) {
+            console.error("Error toggling CRT shader:", error);
+            toggle.checked = !enableShader; // Revert toggle on error
+        }
+    });
+}
+
+
+
 function initializeListenersForTrainingDashboard() {
     // Initialize configuration manager
     initializeConfigManager();
@@ -517,6 +562,9 @@ function initializeListenersForTrainingDashboard() {
 
     // Initialize random stages toggle
     toggleStagesTextbox();
+
+    // Initialize CRT shader toggle
+    initializeCrtShaderToggle();
 
     console.log("Listeners for Training Dashboard initialized.");
 }
