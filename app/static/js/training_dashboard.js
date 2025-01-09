@@ -498,7 +498,6 @@ function toggleStagesTextbox() {
     randomStagesDropdown.addEventListener("change", updateTextboxState);
 }
 
-
 async function initializeShaderToggles() {
     const shaderToggles = {
         all: document.getElementById("shader-all-toggle"),
@@ -508,15 +507,13 @@ async function initializeShaderToggles() {
         rolling_lines: document.getElementById("shader-rolling-lines"),
         gamma_correction: document.getElementById("shader-gamma-correction"),
     };
-    
 
-    // Ensure all toggle elements are present
     if (Object.values(shaderToggles).some(toggle => !toggle)) {
         console.error("Some shader toggle elements are missing.");
         return;
     }
 
-    // Fetch initial shader settings from the server
+    // Fetch initial shader settings
     try {
         const response = await fetch("/training/shader_status");
         const { shaderSettings } = await response.json();
@@ -524,12 +521,17 @@ async function initializeShaderToggles() {
         for (const [key, state] of Object.entries(shaderSettings)) {
             if (shaderToggles[key]) shaderToggles[key].checked = state;
         }
+
+        // Sync "Enable All" toggle state
+        shaderToggles.all.checked = Object.values(shaderSettings).every(Boolean);
     } catch (error) {
         console.error("Error fetching shader settings:", error);
     }
 
-    // Attach change listeners to each toggle
+    // Add individual toggle listeners
     for (const [key, toggle] of Object.entries(shaderToggles)) {
+        if (key === "all") continue;
+
         toggle.addEventListener("change", async () => {
             try {
                 const response = await fetch("/training/toggle_shader", {
@@ -541,18 +543,20 @@ async function initializeShaderToggles() {
                 const result = await response.json();
                 if (result.success) {
                     console.log(`Shader "${key}" toggled: ${toggle.checked ? "enabled" : "disabled"}`);
+                    // Sync "Enable All" checkbox
+                    shaderToggles.all.checked = Object.values(shaderToggles).slice(1).every(t => t.checked);
                 } else {
                     console.error(`Failed to toggle shader "${key}".`);
-                    toggle.checked = !toggle.checked; // Revert toggle on failure
+                    toggle.checked = !toggle.checked; // Revert on failure
                 }
             } catch (error) {
                 console.error(`Error toggling shader "${key}":`, error);
-                toggle.checked = !toggle.checked; // Revert toggle on error
+                toggle.checked = !toggle.checked; // Revert on error
             }
         });
     }
 
-    // Handle "Enable All" toggle separately
+    // Add "Enable All" listener
     shaderToggles.all.addEventListener("change", async () => {
         const enableAll = shaderToggles.all.checked;
 
@@ -567,19 +571,18 @@ async function initializeShaderToggles() {
             if (result.success) {
                 console.log(`All shaders toggled: ${enableAll ? "enabled" : "disabled"}`);
                 for (const [key, toggle] of Object.entries(shaderToggles)) {
-                    if (key !== "all") toggle.checked = enableAll;
+                    toggle.checked = enableAll;
                 }
             } else {
                 console.error("Failed to toggle all shaders.");
-                shaderToggles.all.checked = !enableAll; // Revert toggle on failure
+                shaderToggles.all.checked = !enableAll; // Revert on failure
             }
         } catch (error) {
             console.error("Error toggling all shaders:", error);
-            shaderToggles.all.checked = !enableAll; // Revert toggle on error
+            shaderToggles.all.checked = !enableAll; // Revert on error
         }
     });
 }
-
 
 
 
