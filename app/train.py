@@ -53,16 +53,28 @@ class TrainingManager:
         self.callback_blueprints = {}
         self.callback_instances = []
         self.selected_wrappers = []
-        self.enable_crt_shader = False
+        self.shader_settings = {
+            "radial_distortion": False,
+            "scanlines": False,
+            "dot_mask": False,
+            "rolling_lines": False,
+            "gamma_correction": False,
+        }
 
-    def toggle_crt_shader(self, enable: bool):
-        """Toggle the CRT shader state."""
-        self.enable_crt_shader = enable
-        logger.info(f"CRT shader {'enabled' if enable else 'disabled'}.")
+    def get_shader_settings(self):
+        """Get the current shader settings."""
+        return self.shader_settings
 
-    def is_crt_shader_enabled(self) -> bool:
-        """Check if the CRT shader is enabled."""
-        return self.enable_crt_shader
+    def toggle_shader(self, key, enabled):
+        """Toggle a specific shader setting."""
+        if key not in self.shader_settings:
+            raise ValueError(f"Invalid shader key: {key}")
+        self.shader_settings[key] = enabled
+
+    def toggle_all_shaders(self, enable_all):
+        """Enable or disable all shader settings."""
+        for key in self.shader_settings:
+            self.shader_settings[key] = enable_all
 
     def set_active_config(self, config):
         """Set the active configuration."""
@@ -181,7 +193,7 @@ class TrainingManager:
             model=self.model,
             training_active_flag=self.is_training_active,
             model_updated_flag=self.model_updated_flag,
-            crt_shader_flag=lambda: self.enable_crt_shader  # Dynamically fetch current state
+            shader_settings_flag=lambda: self.shader_settings  # Dynamically fetch shader states
         )
 
     def update_config(self, new_config):
@@ -236,6 +248,13 @@ class TrainingManager:
             "tensorboard_log": "./logs/tensorboard",
             "save_path": "./checkpoints",
             "device": "auto",
+            "shader_settings": {
+                "radialDistortion": False,
+                "scanlines": False,
+                "dotMask": False,
+                "rollingLines": False,
+                "gammaCorrection": False,
+            },
         }
 
         training_config = self.config.get("training_config", {})

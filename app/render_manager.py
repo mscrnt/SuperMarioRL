@@ -26,90 +26,93 @@ def clear_frame_queue():
     logger.info("Frame queue cleared", discarded_frames=discarded_frames)
 
 
-def apply_crt_shader(frame, time, rolling_interval=3, crt_shader_enabled=False):
+def apply_crt_shader(frame, time, rolling_interval=3, shader_options=None):
     """
-    Apply a CRT-like shader effect with radial distortion, scanlines, RCA-style dot mask, and rolling lines.
-    """
+    Apply a CRT-like shader effect with togglable steps.
 
-    if not crt_shader_enabled:
-        logger.info("CRT shader effect disabled.")
-        return frame
+    :param frame: The input frame to process.
+    :param time: The current timestamp for animation effects.
+    :param rolling_interval: Interval for rolling lines effect.
+    :param shader_options: A dictionary with toggle options for each shader step.
+    """
+    shader_options = {
+        "radial_distortion": shader_options.get("radial_distortion", False),
+        "scanlines": shader_options.get("scanlines", False),
+        "dot_mask": shader_options.get("dot_mask", False),
+        "rolling_lines": shader_options.get("rolling_lines", False),
+        "gamma_correction": shader_options.get("gamma_correction", False),
+    }
 
     height, width, _ = frame.shape
-
-    # Step 1: Normalize the frame to [0, 1] for processing
     frame_normalized = frame.astype(np.float32) / 255.0
 
-    # Step 2: Apply radial distortion
-    distortion = 0.2
-    x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
-    x_centered, y_centered = x - 0.5, y - 0.5
-    radial_dist = x_centered**2 + y_centered**2
-    distortion_factor = 1 + radial_dist * distortion
-    x_distorted = x_centered * distortion_factor + 0.5
-    y_distorted = y_centered * distortion_factor + 0.5
-    map_x = (x_distorted * width).astype(np.float32)
-    map_y = (y_distorted * height).astype(np.float32)
-    frame_distorted = cv2.remap(frame_normalized, map_x, map_y, interpolation=cv2.INTER_LINEAR)
+    # Initialize x and y grids only if needed
+    x, y = None, None
+    if shader_options.get("radial_distortion", False) or shader_options.get("rolling_lines", False):
+        x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
 
-    # Step 3: Add horizontal scanline effect
-    scanline_overlay = np.ones((height, 1), dtype=np.float32)
-    scanline_overlay[::2, 0] = 0.9  # Darken every other row
-    scanline_overlay = np.repeat(scanline_overlay, width, axis=1).reshape(height, width, 1)
-    frame_with_scanlines = frame_distorted * scanline_overlay
+    if shader_options.get("radial_distortion", False):
+        distortion = 0.2
+        x_centered, y_centered = x - 0.5, y - 0.5
+        radial_dist = x_centered**2 + y_centered**2
+        distortion_factor = 1 + radial_dist * distortion
+        x_distorted = x_centered * distortion_factor + 0.5
+        y_distorted = y_centered * distortion_factor + 0.5
+        map_x = (x_distorted * width).astype(np.float32)
+        map_y = (y_distorted * height).astype(np.float32)
+        frame_normalized = cv2.remap(frame_normalized, map_x, map_y, interpolation=cv2.INTER_LINEAR)
 
-    # Step 4: RCA-style shadow mask
-    mask_dark = 0.8  # Increased the base brightness
-    mask_light = 1.1  # Reduced the contrast between dark and light
-    dot_mask = np.ones((height, width, 3), dtype=np.float32) * mask_dark
+    if shader_options.get("scanlines", False):
+        scanline_overlay = np.ones((height, 1), dtype=np.float32)
+        scanline_overlay[::2, 0] = 0.9  # Darken every other row
+        scanline_overlay = np.repeat(scanline_overlay, width, axis=1).reshape(height, width, 1)
+        frame_normalized *= scanline_overlay
 
-    for i in range(height):
-        for j in range(width):
-            # Alternating subpixel emphasis
-            if (j % 3 == 0):
-                dot_mask[i, j, 0] = mask_light  # Red
-            elif (j % 3 == 1):
-                dot_mask[i, j, 1] = mask_light  # Green
-            elif (j % 3 == 2):
-                dot_mask[i, j, 2] = mask_light  # Blue
+    if shader_options.get("dot_mask", False):
+        mask_dark = 0.8
+        mask_light = 1.1
+        dot_mask = np.ones((height, width, 3), dtype=np.float32) * mask_dark
+        for i in range(height):
+            for j in range(width):
+                if (j % 3 == 0):
+                    dot_mask[i, j, 0] = mask_light
+                elif (j % 3 == 1):
+                    dot_mask[i, j, 1] = mask_light
+                elif (j % 3 == 2):
+                    dot_mask[i, j, 2] = mask_light
+        frame_normalized *= dot_mask
 
-    frame_with_dot_mask = frame_with_scanlines * dot_mask
+    if shader_options.get("rolling_lines", False):
+        if x is None or y is None:
+            x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
+        if int(time) % rolling_interval == 0:
+            rolling_amplitude = 0.02
+            rolling_frequency = 2
+            rolling_lines = (
+                np.sin(2 * np.pi * rolling_frequency * (y + ((time / 2) % 1))) * rolling_amplitude + 1.0
+            )
+            rolling_lines = rolling_lines.reshape(height, width, 1)
+            frame_normalized *= rolling_lines
 
+    if shader_options.get("gamma_correction", False):
+        input_gamma = 2.2
+        output_gamma = 2.5
+        frame_normalized = np.clip(frame_normalized ** (input_gamma / output_gamma), 0, 1)
 
-    # Step 5: Add rolling lines (hum bars) effect
-    if int(time) % rolling_interval == 0:  # Less frequent based on rolling_interval
-        rolling_amplitude = 0.02  # Subtle effect
-        rolling_frequency = 2  # Slower bars
-        rolling_lines = (
-            np.sin(2 * np.pi * rolling_frequency * (y + ((time / 2) % 1))) * rolling_amplitude + 1.0
-        )
-        rolling_lines = rolling_lines.reshape(height, width, 1)  # Match frame dimensions
-        frame_with_rolling_lines = frame_with_dot_mask * rolling_lines
-    else:
-        frame_with_rolling_lines = frame_with_dot_mask
-
-    # Step 6: Apply gamma correction
-    input_gamma = 2.2
-    output_gamma = 2.5
-    frame_gamma_corrected = np.clip(frame_with_rolling_lines ** (input_gamma / output_gamma), 0, 1)
-
-    # Scale back to [0, 255] for display
-    frame_output = (frame_gamma_corrected * 255).astype(np.uint8)
-
-    return frame_output
+    return (frame_normalized * 255).astype(np.uint8)
 
 
-def render_frame_to_queue(frame, crt_shader_enabled):
+def render_frame_to_queue(frame, shader_options):
     """
     Render a frame, apply shader effects, and place it in the frame queue.
 
     :param frame: The rendered frame (as a NumPy array).
-    :param crt_shader_enabled: Whether to apply the CRT shader effect.
+    :param shader_options: Dictionary containing shader effect toggles.
     """
     try:
         current_time = time.time()
         processed_frame = apply_crt_shader(
-            frame, current_time, rolling_interval=1, crt_shader_enabled=crt_shader_enabled
+            frame, current_time, rolling_interval=1, shader_options=shader_options
         )
 
         if frame_queue.full():
@@ -122,7 +125,6 @@ def render_frame_to_queue(frame, crt_shader_enabled):
         logger.warning("Frame queue is full; skipping frame.")
     except Exception as e:
         logger.error("Rendering failed", exception=e)
-
 
 
 
@@ -140,7 +142,7 @@ def generate_frame_stream(frame_rate=120):
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
             time.sleep(interval)
         except queue.Empty:
-            logger.warning("Frame queue is empty; waiting for new frames.")
+            logger.debug("Frame queue is empty; waiting for new frames.")
         except Exception as e:
             logger.error("Error generating frame stream.", exception=e)
 
@@ -150,7 +152,7 @@ class RenderManager:
     """
     Manages rendering in a separate thread to ensure it does not block training.
     """
-    def __init__(self, render_env, model, cache_update_interval=120, training_active_flag=None, model_updated_flag=None, crt_shader_flag=None):
+    def __init__(self, render_env, model, cache_update_interval=120, training_active_flag=None, model_updated_flag=None, shader_settings_flag=None):
         if render_env is None or model is None:
             raise ValueError("Both 'render_env' and 'model' must be provided to initialize RenderManager.")
 
@@ -162,7 +164,7 @@ class RenderManager:
         self.render_thread = None
         self.obs = None
         self.training_active_flag = training_active_flag or (lambda: True)
-        self.crt_shader_flag = crt_shader_flag or (lambda: False)  # Default to CRT shader disabled
+        self.shader_settings_flag = shader_settings_flag or (lambda: {})  # Default to empty settings
         self.model_updated_flag = model_updated_flag or threading.Event()
         self.rendering_active = threading.Event()
 
@@ -238,8 +240,8 @@ class RenderManager:
                             last_logic_frame, current_logic_frame, alpha
                         )
 
-                        crt_shader_enabled = self.crt_shader_flag()
-                        render_frame_to_queue(interpolated_frame, crt_shader_enabled)
+                        shader_options = self.shader_settings_flag()  # Fetch dynamic shader settings
+                        render_frame_to_queue(interpolated_frame, shader_options)
                     except Exception as e:
                         logger.error("Error during frame rendering.", exception=e)
 
@@ -251,6 +253,7 @@ class RenderManager:
         finally:
             self.rendering_active.clear()
             logger.info("Rendering thread stopped.")
+
 
     def _interpolate_frames(self, frame1, frame2, alpha):
         """

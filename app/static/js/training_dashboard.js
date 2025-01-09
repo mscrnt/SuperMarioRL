@@ -499,48 +499,87 @@ function toggleStagesTextbox() {
 }
 
 
-async function initializeCrtShaderToggle() {
-    const toggle = document.getElementById("shader-toggle"); // Updated to match the HTML id
+async function initializeShaderToggles() {
+    const shaderToggles = {
+        all: document.getElementById("shader-all-toggle"),
+        radial_distortion: document.getElementById("shader-radial-distortion"),
+        scanlines: document.getElementById("shader-scanlines"),
+        dot_mask: document.getElementById("shader-dot-mask"),
+        rolling_lines: document.getElementById("shader-rolling-lines"),
+        gamma_correction: document.getElementById("shader-gamma-correction"),
+    };
+    
 
-    if (!toggle) {
-        console.error("CRT shader toggle element not found.");
+    // Ensure all toggle elements are present
+    if (Object.values(shaderToggles).some(toggle => !toggle)) {
+        console.error("Some shader toggle elements are missing.");
         return;
     }
 
-    // Fetch initial state from the server (optional, to sync UI)
+    // Fetch initial shader settings from the server
     try {
-        const response = await fetch("/training/render_status"); // Replace with an endpoint that can check the shader state
-        const { crt_shader_enabled } = await response.json();
-        toggle.checked = crt_shader_enabled || false;
+        const response = await fetch("/training/shader_status");
+        const { shaderSettings } = await response.json();
+
+        for (const [key, state] of Object.entries(shaderSettings)) {
+            if (shaderToggles[key]) shaderToggles[key].checked = state;
+        }
     } catch (error) {
-        console.error("Error fetching initial CRT shader state:", error);
+        console.error("Error fetching shader settings:", error);
     }
 
-    // Attach change listener to the toggle switch
-    toggle.addEventListener("change", async () => {
-        const enableShader = toggle.checked;
+    // Attach change listeners to each toggle
+    for (const [key, toggle] of Object.entries(shaderToggles)) {
+        toggle.addEventListener("change", async () => {
+            try {
+                const response = await fetch("/training/toggle_shader", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ key, enabled: toggle.checked }),
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    console.log(`Shader "${key}" toggled: ${toggle.checked ? "enabled" : "disabled"}`);
+                } else {
+                    console.error(`Failed to toggle shader "${key}".`);
+                    toggle.checked = !toggle.checked; // Revert toggle on failure
+                }
+            } catch (error) {
+                console.error(`Error toggling shader "${key}":`, error);
+                toggle.checked = !toggle.checked; // Revert toggle on error
+            }
+        });
+    }
+
+    // Handle "Enable All" toggle separately
+    shaderToggles.all.addEventListener("change", async () => {
+        const enableAll = shaderToggles.all.checked;
 
         try {
-            const response = await fetch("/training/toggle_crt_shader", {
+            const response = await fetch("/training/toggle_shader_all", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ enable_shader: enableShader }),
+                body: JSON.stringify({ enableAll }),
             });
 
             const result = await response.json();
-
             if (result.success) {
-                console.log(`CRT Shader toggled: ${enableShader ? "enabled" : "disabled"}`);
+                console.log(`All shaders toggled: ${enableAll ? "enabled" : "disabled"}`);
+                for (const [key, toggle] of Object.entries(shaderToggles)) {
+                    if (key !== "all") toggle.checked = enableAll;
+                }
             } else {
-                console.error("Failed to toggle CRT shader.");
-                toggle.checked = !enableShader; // Revert toggle on failure
+                console.error("Failed to toggle all shaders.");
+                shaderToggles.all.checked = !enableAll; // Revert toggle on failure
             }
         } catch (error) {
-            console.error("Error toggling CRT shader:", error);
-            toggle.checked = !enableShader; // Revert toggle on error
+            console.error("Error toggling all shaders:", error);
+            shaderToggles.all.checked = !enableAll; // Revert toggle on error
         }
     });
 }
+
 
 
 
@@ -564,7 +603,7 @@ function initializeListenersForTrainingDashboard() {
     toggleStagesTextbox();
 
     // Initialize CRT shader toggle
-    initializeCrtShaderToggle();
+    initializeShaderToggles();
 
     console.log("Listeners for Training Dashboard initialized.");
 }

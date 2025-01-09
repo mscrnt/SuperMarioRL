@@ -1,6 +1,6 @@
 /* Video Container */
 .video-container {
-    width: 80%;
+    width: 26rem;
     max-width: 38rem; /* Keeps aspect ratio manageable */
     aspect-ratio: 8 / 7;
     margin: 0 auto;
@@ -195,3 +195,9 @@ h2 {
     font-size: 1rem;
 }
 
+#render-shader-options {
+    display: flex;
+    justify-content: center;
+    gap: 10rem;
+    margin-top: 1rem;
+}

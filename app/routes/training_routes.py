@@ -130,19 +130,49 @@ def create_training_blueprint(training_manager, app_logger, db_manager):
                 logger.error(f"Error checking render status: {e}")
                 return jsonify({"status": "error", "message": "Failed to check rendering status."}), 500
             
-    @training_blueprint.route('/toggle_crt_shader', methods=['POST'])
-    def toggle_crt_shader():
-        """Toggle the CRT shader."""
+    @training_blueprint.route('/shader_status', methods=['GET'])
+    def shader_status():
+        """Return current shader settings."""
+        try:
+            return jsonify(shaderSettings=training_manager.get_shader_settings())
+        except Exception as e:
+            logger.error(f"Error fetching shader settings: {e}")
+            return jsonify(error=str(e)), 500
+
+    @training_blueprint.route('/toggle_shader', methods=['POST'])
+    def toggle_shader():
+        """Toggle a specific shader."""
         data = request.json
-        enable_shader = data.get('enable_shader', False)
+        key = data.get('key')
+        enabled = data.get('enabled', False)
 
         try:
-            training_manager.toggle_crt_shader(enable_shader)
-            logger.info(f"CRT shader toggled: {'enabled' if enable_shader else 'disabled'}")
+            training_manager.toggle_shader(key, enabled)
+            logger.info(f"Shader '{key}' toggled: {'enabled' if enabled else 'disabled'}")
+            return jsonify(success=True)
+        except ValueError as e:
+            logger.error(f"Invalid shader key: {key}")
+            return jsonify(success=False, error=str(e)), 400
+        except Exception as e:
+            logger.error(f"Error toggling shader '{key}': {e}")
+            return jsonify(success=False, error=str(e)), 500
+
+
+    @training_blueprint.route('/toggle_shader_all', methods=['POST'])
+    def toggle_shader_all():
+        """Toggle all shaders."""
+        data = request.json
+        enable_all = data.get('enableAll', False)
+
+        try:
+            training_manager.toggle_all_shaders(enable_all)
+            logger.info(f"All shaders toggled: {'enabled' if enable_all else 'disabled'}")
             return jsonify(success=True)
         except Exception as e:
-            logger.error(f"Error toggling CRT shader: {e}")
+            logger.error(f"Error toggling all shaders: {e}")
             return jsonify(success=False, error=str(e)), 500
+
+
 
     @training_blueprint.route("/model_status", methods=["GET"])
     def model_status():
