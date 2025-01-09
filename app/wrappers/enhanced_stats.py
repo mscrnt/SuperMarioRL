@@ -113,6 +113,9 @@ class EnhancedStatsWrapper(gym.Wrapper):
 
         # Count death if player is in the death state or if the lives have decreased
         if player_state == death_state or current_life < self.previous_life:
+            # If episode death will equal 4 after this death, return only 3
+            if self.episode_deaths == 3:
+                return
             self.episode_deaths += 1
             self.total_deaths += 1
             self.logger.info(
@@ -181,9 +184,21 @@ class EnhancedStatsWrapper(gym.Wrapper):
         # Add all mapped RAM states
         stats.update(self._get_mapped_states())
 
+        # Define keys to exclude from printed stats
+        keys_to_exclude = {}
+
+        # Filter out RAM-specific keys
+        filtered_stats = {key: value for key, value in stats.items() if key not in keys_to_exclude}
+
         # if done:
-        #     readable_stats = ", ".join([f"{key}: {value}" for key, value in stats.items()])
+        #     # Convert stats to a readable string
+        #     readable_stats = ", ".join([f"{key}: {value}" for key, value in filtered_stats.items()])
         #     self.logger.info(f"Env {self.env_index} stats: {readable_stats}")
+        #     self.logger.info(
+        #         f"Episode enemy kills: {self.episode_enemy_kills}, deaths: {self.episode_deaths}, "
+        #         f"coins: {self.episode_coins}, total enemy kills: {self.total_enemy_kills}, "
+        #         f"total deaths: {self.total_deaths}, total coins: {self.total_coins}"
+        #     )
 
         # Ensure stats fit the observation space
         stats_values = list(stats.values())[:15]
